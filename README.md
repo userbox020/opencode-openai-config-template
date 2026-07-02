@@ -9,8 +9,8 @@ Reusable OpenCode configuration for general software projects. It is OpenAI-firs
 - `template/.opencode/oh-my-opencode-slim/project-instructions.md`: project-wide working rules.
 - `template/.opencode/oh-my-opencode-slim/orchestrator_append.md`: generic routing guidance.
 - `template/.opencode/skills/project-workflow/SKILL.md`: reusable workflow skill for any codebase.
-- `scripts/install.ps1`: Windows installer that copies the template into a project.
-- `scripts/install.sh`: macOS/Linux installer that copies the template into a project.
+- `scripts/install.ps1`: Windows installer with interactive model selection.
+- `scripts/install.sh`: macOS/Linux installer with interactive model selection.
 
 No API keys, RPC endpoints, private keys, or project-specific paths are included.
 
@@ -27,8 +27,9 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 - OpenCode installed and available as `opencode` or `opencode.cmd`.
 - The `oh-my-opencode-slim` OpenCode plugin available to OpenCode.
 - OpenAI credentials or a compatible provider setup for the configured `openai/...` model IDs.
+- macOS/Linux installer model rewriting requires `node`, `python3`, or `python`.
 
-If your OpenCode setup uses different model names, edit both:
+The installer queries available models with `opencode models openai` by default and can rewrite model routing during install. If your OpenCode setup uses different model names, either select them during install or edit both:
 
 - `template/.opencode/opencode.jsonc`
 - `template/.opencode/oh-my-opencode-slim.jsonc`
@@ -40,6 +41,8 @@ From this repo on Windows:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\path\to\your-project
 ```
+
+The installer asks whether to customize model routing. If you choose yes, it shows each routing slot, a short description, the default model, and the numbered models returned by OpenCode.
 
 From this repo on macOS/Linux:
 
@@ -62,6 +65,45 @@ FORCE=1 bash ./scripts/install.sh /path/to/your-project
 ```
 
 Force mode merges and overwrites matching template files. It does not delete extra files in the target `.opencode` directory.
+
+## Interactive Model Routing
+
+The installer prompts for these model slots:
+
+- `core`: primary coordinator plus built-in `build`, `plan`, and `general` agents.
+- `explorer`: fast repo search, file discovery, and context mapping.
+- `fixer`: bounded code implementation after scope is clear.
+- `designer`: UI/UX, responsive layout, and visual polish.
+- `title`: short session or conversation title generation.
+- `summary`: short session summaries and handoff summaries.
+- `compaction`: long-context compaction before continuing.
+- `librarian`: docs, library behavior, examples, and reference lookups.
+- `reviewer`: code review and deep-review council lane.
+- `architect`: architecture, module boundary, API, migration, and tradeoff review.
+- `test`: test strategy, fixtures, and regression coverage.
+- `security`: defensive security review and security council lane.
+
+Use a different provider model list:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\path\to\your-project -Provider anthropic
+```
+
+```bash
+bash ./scripts/install.sh /path/to/your-project --provider anthropic
+```
+
+Skip prompts and keep defaults for automation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\path\to\your-project -NonInteractive
+```
+
+```bash
+bash ./scripts/install.sh /path/to/your-project --non-interactive
+```
+
+You can also set `OPENCODE_MODEL_PROVIDER` for the Unix installer, or `OPENCODE_BIN` if your OpenCode binary has a custom name.
 
 ## Validate After Install
 
