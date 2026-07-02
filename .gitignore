@@ -1,0 +1,35 @@
+.DS_Store
+Thumbs.db
+node_modules/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+*.log
+
+# Secrets and local credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*keypair*.json
+*private-key*.json
+rpc_endpoints.txt
+graphql_endpoints.txt
+.npmrc
+.pypirc
+.netrc
+
+# OpenCode local/runtime state
+.opencode/session/
+.opencode/storage/
+.opencode/tool-output/
+template/.opencode/.gitignore
+template/.opencode/node_modules/
+template/.opencode/package.json
+template/.opencode/package-lock.json
+template/.opencode/bun.lock
