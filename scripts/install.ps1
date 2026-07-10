@@ -9,76 +9,16 @@ $ErrorActionPreference = "Stop"
 
 $ModelSlots = @(
   [ordered]@{
-    Key = "core"
-    Title = "Core reasoning and orchestration"
-    Description = "Primary coordinator plus built-in build, plan, and general agents. Use your strongest reliable coding model."
-    Default = "openai/gpt-5.5"
+    Key = "primary"
+    Title = "Primary and deep reasoning"
+    Description = "Planning, fixing, Oracle, architecture, and high-stakes specialist work."
+    Default = "openai/gpt-5.6-sol"
   },
   [ordered]@{
-    Key = "explorer"
-    Title = "Explorer and code search"
-    Description = "Fast repo navigation, grep, file discovery, and context mapping. Use a fast inexpensive coding model."
-    Default = "openai/gpt-5.3-codex-spark"
-  },
-  [ordered]@{
-    Key = "fixer"
-    Title = "Fixer and bounded implementation"
-    Description = "Focused code edits after scope is clear. Use a fast coding model that is good at mechanical changes."
-    Default = "openai/gpt-5.3-codex-spark"
-  },
-  [ordered]@{
-    Key = "designer"
-    Title = "Designer and UI/UX work"
-    Description = "User-facing UI, responsive layout, visual polish, and interaction changes. Use a model that handles frontend design well."
-    Default = "openai/gpt-5.3-codex-spark"
-  },
-  [ordered]@{
-    Key = "title"
-    Title = "Title generation"
-    Description = "Short session or conversation titles. Use a fast cheap model; this does not need deep reasoning."
-    Default = "openai/gpt-5.3-codex-spark"
-  },
-  [ordered]@{
-    Key = "summary"
-    Title = "Summary generation"
-    Description = "Short session summaries and handoff summaries. Use a fast model with decent compression quality."
-    Default = "openai/gpt-5.3-codex-spark"
-  },
-  [ordered]@{
-    Key = "compaction"
-    Title = "Context compaction"
-    Description = "Compresses long conversations before continuing. Use a reliable model because bad compaction loses context."
-    Default = "openai/gpt-5.5"
-  },
-  [ordered]@{
-    Key = "librarian"
-    Title = "Librarian and docs research"
-    Description = "External docs, library behavior, examples, and reference lookups. Use a reliable model; low variant is configured in the preset."
-    Default = "openai/gpt-5.5"
-  },
-  [ordered]@{
-    Key = "reviewer"
-    Title = "Code reviewer"
-    Description = "Correctness, regressions, maintainability, edge cases, and test-gap review. Use a strong reasoning model."
-    Default = "openai/gpt-5.5"
-  },
-  [ordered]@{
-    Key = "architect"
-    Title = "Architecture reviewer"
-    Description = "Module boundaries, API contracts, migrations, data flow, and technical tradeoffs. Use a strong reasoning model."
-    Default = "openai/gpt-5.5"
-  },
-  [ordered]@{
-    Key = "test"
-    Title = "Test writer"
-    Description = "Test strategy, fixtures, regression coverage, and reproduction cases. Use a capable coding model."
-    Default = "openai/gpt-5.3-codex-spark"
-  },
-  [ordered]@{
-    Key = "security"
-    Title = "Security reviewer"
-    Description = "Defensive auth, secrets, injection, unsafe IO, dependency, deployment, and data exposure review. Use a strong reasoning model."
-    Default = "openai/gpt-5.5"
+    Key = "balanced"
+    Title = "Fast and balanced work"
+    Description = "Routine orchestration, general work, exploration, docs, design, titles, summaries, and compaction."
+    Default = "openai/gpt-5.6-terra"
   }
 )
 
@@ -192,36 +132,75 @@ function Apply-ModelChoices {
   $SlimConfigPath = Join-Path -Path $DestinationPath -ChildPath "oh-my-opencode-slim.jsonc"
 
   $OpenCodeConfig = Get-Content -LiteralPath $OpenCodeConfigPath -Raw | ConvertFrom-Json
-  $OpenCodeConfig.model = $Models["core"]
-  $OpenCodeConfig.small_model = $Models["explorer"]
-  $OpenCodeConfig.agent.build.model = $Models["core"]
-  $OpenCodeConfig.agent.plan.model = $Models["core"]
-  $OpenCodeConfig.agent.general.model = $Models["core"]
-  $OpenCodeConfig.agent.explore.model = $Models["explorer"]
-  $OpenCodeConfig.agent.title.model = $Models["title"]
-  $OpenCodeConfig.agent.summary.model = $Models["summary"]
-  $OpenCodeConfig.agent.compaction.model = $Models["compaction"]
+  $Primary = $Models["primary"]
+  $Balanced = $Models["balanced"]
+
+  $OpenCodeConfig.model = $Primary
+  $OpenCodeConfig.small_model = $Balanced
+  $OpenCodeConfig.agent.build.model = $Primary
+  $OpenCodeConfig.agent.build.variant = "medium"
+  $OpenCodeConfig.agent.plan.model = $Primary
+  $OpenCodeConfig.agent.plan.variant = "high"
+  $OpenCodeConfig.agent.general.model = $Balanced
+  $OpenCodeConfig.agent.general.variant = "medium"
+  $OpenCodeConfig.agent.explore.model = $Balanced
+  $OpenCodeConfig.agent.explore.variant = "low"
+  $OpenCodeConfig.agent.title.model = $Balanced
+  $OpenCodeConfig.agent.title.variant = "low"
+  $OpenCodeConfig.agent.summary.model = $Balanced
+  $OpenCodeConfig.agent.summary.variant = "medium"
+  $OpenCodeConfig.agent.compaction.model = $Balanced
+  $OpenCodeConfig.agent.compaction.variant = "medium"
   ConvertTo-PrettyJsonFile -InputObject $OpenCodeConfig -Path $OpenCodeConfigPath
 
   $SlimConfig = Get-Content -LiteralPath $SlimConfigPath -Raw | ConvertFrom-Json
   $Preset = $SlimConfig.presets."generic-openai"
-  $Preset.orchestrator.model = $Models["core"]
-  $Preset.oracle.model = $Models["core"]
-  $Preset.council.model = $Models["core"]
-  $Preset.explorer.model = $Models["explorer"]
-  $Preset.librarian.model = $Models["librarian"]
-  $Preset.fixer.model = $Models["fixer"]
-  $Preset.designer.model = $Models["designer"]
+  $Preset.orchestrator.model = @(
+    [pscustomobject]@{ id = $Primary; variant = "medium" },
+    [pscustomobject]@{ id = $Balanced; variant = "medium" }
+  )
+  $Preset.oracle.model = @(
+    [pscustomobject]@{ id = $Primary; variant = "xhigh" },
+    [pscustomobject]@{ id = $Balanced; variant = "high" }
+  )
+  $Preset.council.model = @(
+    [pscustomobject]@{ id = $Primary; variant = "high" },
+    [pscustomobject]@{ id = $Balanced; variant = "high" }
+  )
+  $Preset.explorer.model = @(
+    [pscustomobject]@{ id = $Balanced; variant = "low" },
+    [pscustomobject]@{ id = $Primary; variant = "low" }
+  )
+  $Preset.librarian.model = @(
+    [pscustomobject]@{ id = $Balanced; variant = "low" },
+    [pscustomobject]@{ id = $Primary; variant = "low" }
+  )
+  $Preset.fixer.model = @(
+    [pscustomobject]@{ id = $Primary; variant = "high" },
+    [pscustomobject]@{ id = $Balanced; variant = "high" }
+  )
+  $Preset.designer.model = @(
+    [pscustomobject]@{ id = $Balanced; variant = "medium" },
+    [pscustomobject]@{ id = $Primary; variant = "high" }
+  )
 
-  $SlimConfig.agents."code-reviewer".model = $Models["reviewer"]
-  $SlimConfig.agents."repo-architect".model = $Models["architect"]
-  $SlimConfig.agents."test-writer".model = $Models["test"]
-  $SlimConfig.agents."security-reviewer".model = $Models["security"]
+  $SlimConfig.agents."code-reviewer".model = $Balanced
+  $SlimConfig.agents."code-reviewer".variant = "high"
+  $SlimConfig.agents."repo-architect".model = $Primary
+  $SlimConfig.agents."repo-architect".variant = "xhigh"
+  $SlimConfig.agents."test-writer".model = $Balanced
+  $SlimConfig.agents."test-writer".variant = "medium"
+  $SlimConfig.agents."security-reviewer".model = $Primary
+  $SlimConfig.agents."security-reviewer".variant = "xhigh"
 
   $CouncilPreset = $SlimConfig.council.presets."generic-review-board"
-  $CouncilPreset."deep-review".model = $Models["reviewer"]
-  $CouncilPreset."fast-sanity".model = $Models["explorer"]
-  $CouncilPreset."security-sanity".model = $Models["security"]
+  $SlimConfig.council.councillor_retries = 1
+  $CouncilPreset."deep-review".model = $Primary
+  $CouncilPreset."deep-review".variant = "xhigh"
+  $CouncilPreset."fast-sanity".model = $Balanced
+  $CouncilPreset."fast-sanity".variant = "low"
+  $CouncilPreset."security-sanity".model = $Balanced
+  $CouncilPreset."security-sanity".variant = "high"
   ConvertTo-PrettyJsonFile -InputObject $SlimConfig -Path $SlimConfigPath
 }
 

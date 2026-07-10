@@ -2,7 +2,9 @@
 
 Use this routing policy for any project using this template.
 
-- Keep primary planning and orchestration on `openai/gpt-5.5`; use `openai/gpt-5.3-codex-spark` for fast exploration, mechanical fixes, design iteration, titles, and summaries.
+- Use medium effort for routine orchestration and implementation, and high effort for planning, fixing, and review.
+- Reserve xhigh effort for Oracle, deep council work, or high-stakes specialist escalation.
+- Use the configured primary/deep model for demanding work and the configured fast/balanced model for routine work; route exploration, docs research, and title utilities to the fast/balanced model at low effort.
 - Delegate focused second-pass work instead of making one agent solve every concern.
 - Use `@code-reviewer` for correctness, regression, maintainability, edge-case, and test-gap review.
 - Use `@repo-architect` for architecture decisions, migrations, module boundaries, API contracts, and sequencing.

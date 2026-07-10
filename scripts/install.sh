@@ -44,49 +44,35 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_DIR="$REPO_ROOT/template/.opencode"
 DEST_DIR="$PROJECT_PATH/.opencode"
 
-MODEL_KEYS=(core explorer fixer designer title summary compaction librarian reviewer architect test security)
+MODEL_KEYS=(primary balanced)
 MODEL_TITLES=(
-  "Core reasoning and orchestration"
-  "Explorer and code search"
-  "Fixer and bounded implementation"
-  "Designer and UI/UX work"
-  "Title generation"
-  "Summary generation"
-  "Context compaction"
-  "Librarian and docs research"
-  "Code reviewer"
-  "Architecture reviewer"
-  "Test writer"
-  "Security reviewer"
+  "Primary and deep reasoning"
+  "Fast and balanced work"
 )
 MODEL_DESCRIPTIONS=(
-  "Primary coordinator plus built-in build, plan, and general agents. Use your strongest reliable coding model."
-  "Fast repo navigation, grep, file discovery, and context mapping. Use a fast inexpensive coding model."
-  "Focused code edits after scope is clear. Use a fast coding model that is good at mechanical changes."
-  "User-facing UI, responsive layout, visual polish, and interaction changes. Use a model that handles frontend design well."
-  "Short session or conversation titles. Use a fast cheap model; this does not need deep reasoning."
-  "Short session summaries and handoff summaries. Use a fast model with decent compression quality."
-  "Compresses long conversations before continuing. Use a reliable model because bad compaction loses context."
-  "External docs, library behavior, examples, and reference lookups. Use a reliable model; low variant is configured in the preset."
-  "Correctness, regressions, maintainability, edge cases, and test-gap review. Use a strong reasoning model."
-  "Module boundaries, API contracts, migrations, data flow, and technical tradeoffs. Use a strong reasoning model."
-  "Test strategy, fixtures, regression coverage, and reproduction cases. Use a capable coding model."
-  "Defensive auth, secrets, injection, unsafe IO, dependency, deployment, and data exposure review. Use a strong reasoning model."
+  "Planning, fixing, Oracle, architecture, and high-stakes specialist work."
+  "Routine orchestration, general work, exploration, docs, design, titles, summaries, and compaction."
 )
 MODEL_DEFAULTS=(
-  "openai/gpt-5.5"
-  "openai/gpt-5.3-codex-spark"
-  "openai/gpt-5.3-codex-spark"
-  "openai/gpt-5.3-codex-spark"
-  "openai/gpt-5.3-codex-spark"
-  "openai/gpt-5.3-codex-spark"
-  "openai/gpt-5.5"
-  "openai/gpt-5.5"
-  "openai/gpt-5.5"
-  "openai/gpt-5.5"
-  "openai/gpt-5.3-codex-spark"
-  "openai/gpt-5.5"
+  "openai/gpt-5.6-sol"
+  "openai/gpt-5.6-terra"
 )
+
+JSON_RUNTIME=""
+JSON_RUNTIME_BIN=""
+if command -v node >/dev/null 2>&1; then
+  JSON_RUNTIME="node"
+  JSON_RUNTIME_BIN="$(command -v node)"
+elif command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0 if sys.version_info.major == 3 else 1)' >/dev/null 2>&1; then
+  JSON_RUNTIME="python3"
+  JSON_RUNTIME_BIN="$(command -v python3)"
+elif command -v python >/dev/null 2>&1 && python -c 'import sys; sys.exit(0 if sys.version_info.major == 3 else 1)' >/dev/null 2>&1; then
+  JSON_RUNTIME="python3"
+  JSON_RUNTIME_BIN="$(command -v python)"
+else
+  echo "Installation requires Node.js or Python 3 to generate model routing; no supported runtime was found." >&2
+  exit 1
+fi
 
 MODELS=()
 if command -v "$OPENCODE_BIN" >/dev/null 2>&1; then
@@ -163,26 +149,14 @@ apply_model_choices() {
   local opencode_config="$DEST_DIR/opencode.jsonc"
   local slim_config="$DEST_DIR/oh-my-opencode-slim.jsonc"
 
-  if command -v node >/dev/null 2>&1; then
-    node - "$opencode_config" "$slim_config" \
-      "$CORE_MODEL" "$EXPLORER_MODEL" "$FIXER_MODEL" "$DESIGNER_MODEL" "$TITLE_MODEL" "$SUMMARY_MODEL" \
-      "$COMPACTION_MODEL" "$LIBRARIAN_MODEL" "$REVIEWER_MODEL" "$ARCHITECT_MODEL" "$TEST_MODEL" "$SECURITY_MODEL" <<'NODE'
+  if [[ "$JSON_RUNTIME" == "node" ]]; then
+    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" <<'NODE'
 const fs = require('fs');
 const [
   opencodePath,
   slimPath,
-  core,
-  explorer,
-  fixer,
-  designer,
-  title,
-  summary,
-  compaction,
-  librarian,
-  reviewer,
-  architect,
-  test,
-  security,
+  primary,
+  balanced,
 ] = process.argv.slice(2);
 
 function readJson(path) {
@@ -194,65 +168,85 @@ function writeJson(path, value) {
 }
 
 const opencode = readJson(opencodePath);
-opencode.model = core;
-opencode.small_model = explorer;
-opencode.agent.build.model = core;
-opencode.agent.plan.model = core;
-opencode.agent.general.model = core;
-opencode.agent.explore.model = explorer;
-opencode.agent.title.model = title;
-opencode.agent.summary.model = summary;
-opencode.agent.compaction.model = compaction;
+opencode.model = primary;
+opencode.small_model = balanced;
+opencode.agent.build.model = primary;
+opencode.agent.build.variant = 'medium';
+opencode.agent.plan.model = primary;
+opencode.agent.plan.variant = 'high';
+opencode.agent.general.model = balanced;
+opencode.agent.general.variant = 'medium';
+opencode.agent.explore.model = balanced;
+opencode.agent.explore.variant = 'low';
+opencode.agent.title.model = balanced;
+opencode.agent.title.variant = 'low';
+opencode.agent.summary.model = balanced;
+opencode.agent.summary.variant = 'medium';
+opencode.agent.compaction.model = balanced;
+opencode.agent.compaction.variant = 'medium';
 writeJson(opencodePath, opencode);
 
 const slim = readJson(slimPath);
 const preset = slim.presets['generic-openai'];
-preset.orchestrator.model = core;
-preset.oracle.model = core;
-preset.council.model = core;
-preset.explorer.model = explorer;
-preset.librarian.model = librarian;
-preset.fixer.model = fixer;
-preset.designer.model = designer;
-slim.agents['code-reviewer'].model = reviewer;
-slim.agents['repo-architect'].model = architect;
-slim.agents['test-writer'].model = test;
-slim.agents['security-reviewer'].model = security;
+preset.orchestrator.model = [
+  { id: primary, variant: 'medium' },
+  { id: balanced, variant: 'medium' },
+];
+preset.oracle.model = [
+  { id: primary, variant: 'xhigh' },
+  { id: balanced, variant: 'high' },
+];
+preset.council.model = [
+  { id: primary, variant: 'high' },
+  { id: balanced, variant: 'high' },
+];
+preset.explorer.model = [
+  { id: balanced, variant: 'low' },
+  { id: primary, variant: 'low' },
+];
+preset.librarian.model = [
+  { id: balanced, variant: 'low' },
+  { id: primary, variant: 'low' },
+];
+preset.fixer.model = [
+  { id: primary, variant: 'high' },
+  { id: balanced, variant: 'high' },
+];
+preset.designer.model = [
+  { id: balanced, variant: 'medium' },
+  { id: primary, variant: 'high' },
+];
+slim.agents['code-reviewer'].model = balanced;
+slim.agents['code-reviewer'].variant = 'high';
+slim.agents['repo-architect'].model = primary;
+slim.agents['repo-architect'].variant = 'xhigh';
+slim.agents['test-writer'].model = balanced;
+slim.agents['test-writer'].variant = 'medium';
+slim.agents['security-reviewer'].model = primary;
+slim.agents['security-reviewer'].variant = 'xhigh';
 const councilPreset = slim.council.presets['generic-review-board'];
-councilPreset['deep-review'].model = reviewer;
-councilPreset['fast-sanity'].model = explorer;
-councilPreset['security-sanity'].model = security;
+slim.council.councillor_retries = 1;
+councilPreset['deep-review'].model = primary;
+councilPreset['deep-review'].variant = 'xhigh';
+councilPreset['fast-sanity'].model = balanced;
+councilPreset['fast-sanity'].variant = 'low';
+councilPreset['security-sanity'].model = balanced;
+councilPreset['security-sanity'].variant = 'high';
 writeJson(slimPath, slim);
 NODE
     return 0
   fi
 
-  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
-    local python_bin="python3"
-    if ! command -v python3 >/dev/null 2>&1; then
-      python_bin="python"
-    fi
-    "$python_bin" - "$opencode_config" "$slim_config" \
-      "$CORE_MODEL" "$EXPLORER_MODEL" "$FIXER_MODEL" "$DESIGNER_MODEL" "$TITLE_MODEL" "$SUMMARY_MODEL" \
-      "$COMPACTION_MODEL" "$LIBRARIAN_MODEL" "$REVIEWER_MODEL" "$ARCHITECT_MODEL" "$TEST_MODEL" "$SECURITY_MODEL" <<'PY'
+  if [[ "$JSON_RUNTIME" == "python3" ]]; then
+    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" <<'PY'
 import json
 import sys
 
 (
     opencode_path,
     slim_path,
-    core,
-    explorer,
-    fixer,
-    designer,
-    title,
-    summary,
-    compaction,
-    librarian,
-    reviewer,
-    architect,
-    test,
-    security,
+    primary,
+    balanced,
 ) = sys.argv[1:]
 
 def read_json(path):
@@ -265,40 +259,62 @@ def write_json(path, value):
         handle.write("\n")
 
 opencode = read_json(opencode_path)
-opencode["model"] = core
-opencode["small_model"] = explorer
-opencode["agent"]["build"]["model"] = core
-opencode["agent"]["plan"]["model"] = core
-opencode["agent"]["general"]["model"] = core
-opencode["agent"]["explore"]["model"] = explorer
-opencode["agent"]["title"]["model"] = title
-opencode["agent"]["summary"]["model"] = summary
-opencode["agent"]["compaction"]["model"] = compaction
+opencode["model"] = primary
+opencode["small_model"] = balanced
+opencode["agent"]["build"].update(model=primary, variant="medium")
+opencode["agent"]["plan"].update(model=primary, variant="high")
+opencode["agent"]["general"].update(model=balanced, variant="medium")
+opencode["agent"]["explore"].update(model=balanced, variant="low")
+opencode["agent"]["title"].update(model=balanced, variant="low")
+opencode["agent"]["summary"].update(model=balanced, variant="medium")
+opencode["agent"]["compaction"].update(model=balanced, variant="medium")
 write_json(opencode_path, opencode)
 
 slim = read_json(slim_path)
 preset = slim["presets"]["generic-openai"]
-preset["orchestrator"]["model"] = core
-preset["oracle"]["model"] = core
-preset["council"]["model"] = core
-preset["explorer"]["model"] = explorer
-preset["librarian"]["model"] = librarian
-preset["fixer"]["model"] = fixer
-preset["designer"]["model"] = designer
-slim["agents"]["code-reviewer"]["model"] = reviewer
-slim["agents"]["repo-architect"]["model"] = architect
-slim["agents"]["test-writer"]["model"] = test
-slim["agents"]["security-reviewer"]["model"] = security
+preset["orchestrator"]["model"] = [
+    {"id": primary, "variant": "medium"},
+    {"id": balanced, "variant": "medium"},
+]
+preset["oracle"]["model"] = [
+    {"id": primary, "variant": "xhigh"},
+    {"id": balanced, "variant": "high"},
+]
+preset["council"]["model"] = [
+    {"id": primary, "variant": "high"},
+    {"id": balanced, "variant": "high"},
+]
+preset["explorer"]["model"] = [
+    {"id": balanced, "variant": "low"},
+    {"id": primary, "variant": "low"},
+]
+preset["librarian"]["model"] = [
+    {"id": balanced, "variant": "low"},
+    {"id": primary, "variant": "low"},
+]
+preset["fixer"]["model"] = [
+    {"id": primary, "variant": "high"},
+    {"id": balanced, "variant": "high"},
+]
+preset["designer"]["model"] = [
+    {"id": balanced, "variant": "medium"},
+    {"id": primary, "variant": "high"},
+]
+slim["agents"]["code-reviewer"].update(model=balanced, variant="high")
+slim["agents"]["repo-architect"].update(model=primary, variant="xhigh")
+slim["agents"]["test-writer"].update(model=balanced, variant="medium")
+slim["agents"]["security-reviewer"].update(model=primary, variant="xhigh")
 council_preset = slim["council"]["presets"]["generic-review-board"]
-council_preset["deep-review"]["model"] = reviewer
-council_preset["fast-sanity"]["model"] = explorer
-council_preset["security-sanity"]["model"] = security
+slim["council"]["councillor_retries"] = 1
+council_preset["deep-review"].update(model=primary, variant="xhigh")
+council_preset["fast-sanity"].update(model=balanced, variant="low")
+council_preset["security-sanity"].update(model=balanced, variant="high")
 write_json(slim_path, slim)
 PY
     return 0
   fi
 
-  echo "Could not customize model routing: install node, python3, or python, then re-run installer." >&2
+  echo "Internal error: unsupported JSON runtime '$JSON_RUNTIME'." >&2
   return 1
 }
 
@@ -339,18 +355,8 @@ if [[ "$NON_INTERACTIVE" != "1" ]]; then
   esac
 fi
 
-CORE_MODEL=""
-EXPLORER_MODEL=""
-FIXER_MODEL=""
-DESIGNER_MODEL=""
-TITLE_MODEL=""
-SUMMARY_MODEL=""
-COMPACTION_MODEL=""
-LIBRARIAN_MODEL=""
-REVIEWER_MODEL=""
-ARCHITECT_MODEL=""
-TEST_MODEL=""
-SECURITY_MODEL=""
+PRIMARY_MODEL=""
+BALANCED_MODEL=""
 
 SELECTED_MODELS=()
 for index in "${!MODEL_KEYS[@]}"; do
@@ -358,18 +364,8 @@ for index in "${!MODEL_KEYS[@]}"; do
   SELECTED_MODELS+=("$selected")
 done
 
-CORE_MODEL="${SELECTED_MODELS[0]}"
-EXPLORER_MODEL="${SELECTED_MODELS[1]}"
-FIXER_MODEL="${SELECTED_MODELS[2]}"
-DESIGNER_MODEL="${SELECTED_MODELS[3]}"
-TITLE_MODEL="${SELECTED_MODELS[4]}"
-SUMMARY_MODEL="${SELECTED_MODELS[5]}"
-COMPACTION_MODEL="${SELECTED_MODELS[6]}"
-LIBRARIAN_MODEL="${SELECTED_MODELS[7]}"
-REVIEWER_MODEL="${SELECTED_MODELS[8]}"
-ARCHITECT_MODEL="${SELECTED_MODELS[9]}"
-TEST_MODEL="${SELECTED_MODELS[10]}"
-SECURITY_MODEL="${SELECTED_MODELS[11]}"
+PRIMARY_MODEL="${SELECTED_MODELS[0]}"
+BALANCED_MODEL="${SELECTED_MODELS[1]}"
 
 apply_model_choices
 

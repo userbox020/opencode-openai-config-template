@@ -16,9 +16,12 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 
 ## Defaults
 
-- Core reasoning and orchestration: `openai/gpt-5.5` with `xhigh`.
-- Fast exploration, fixing, design, titles, and summaries: `openai/gpt-5.3-codex-spark` with `xhigh`.
-- Compaction: `openai/gpt-5.5` with `high`.
+- Runtime-verified OpenAI models only: `openai/gpt-5.6-sol` for primary/deep work and `openai/gpt-5.6-terra` for fast/balanced work. Luna is intentionally excluded because it may be catalog-listed but unavailable at runtime; the generic `openai/gpt-5.6` alias is not used.
+- Core routing: Sol default; Terra small model; build Sol medium; plan Sol high; general Terra medium; explore/title Terra low; summary/compaction Terra medium. Compaction retains 6 tail turns.
+- Built-in fallback routing: orchestrator Sol medium → Terra medium; Oracle Sol xhigh → Terra high; council Sol high → Terra high; explorer/librarian Terra low → Sol low; fixer Sol high → Terra high; designer Terra medium → Sol high.
+- Council retries once. Deep review uses Sol xhigh, fast sanity uses Terra low, and balanced security review uses Terra high.
+- Generic specialists route code review to Terra high, architecture to Sol xhigh, test writing to Terra medium, and high-stakes security review to Sol xhigh.
+- These are template defaults. Customized installations substitute the selected primary and balanced models while retaining the documented effort variants and fallback order.
 - Secret-like files are read-gated and edit-denied by default.
 - Risky shell operations such as `git push`, package publish, production deploy, `kubectl`, `terraform apply`, live transaction broadcasts, and destructive cleanup ask first.
 
@@ -27,9 +30,9 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 - OpenCode installed and available as `opencode` or `opencode.cmd`.
 - The `oh-my-opencode-slim` OpenCode plugin available to OpenCode.
 - OpenAI credentials or a compatible provider setup for the configured `openai/...` model IDs.
-- macOS/Linux installer model rewriting requires `node`, `python3`, or `python`.
+- The macOS/Linux installer requires Node.js or Python 3 and verifies the runtime before copying or overwriting destination files.
 
-The installer queries available models with `opencode models openai` by default and can rewrite model routing during install. If your OpenCode setup uses different model names, either select them during install or edit both:
+The installer queries `opencode models openai` for interactive customization. Catalog presence does not guarantee runtime availability; the defaults are the runtime-verified Sol and Terra IDs above. If your setup uses different model names, select them during install or edit both:
 
 - `template/.opencode/opencode.jsonc`
 - `template/.opencode/oh-my-opencode-slim.jsonc`
@@ -68,20 +71,10 @@ Force mode merges and overwrites matching template files. It does not delete ext
 
 ## Interactive Model Routing
 
-The installer prompts for these model slots:
+The installer prompts for two model slots while preserving all role-specific effort variants and fallback order:
 
-- `core`: primary coordinator plus built-in `build`, `plan`, and `general` agents.
-- `explorer`: fast repo search, file discovery, and context mapping.
-- `fixer`: bounded code implementation after scope is clear.
-- `designer`: UI/UX, responsive layout, and visual polish.
-- `title`: short session or conversation title generation.
-- `summary`: short session summaries and handoff summaries.
-- `compaction`: long-context compaction before continuing.
-- `librarian`: docs, library behavior, examples, and reference lookups.
-- `reviewer`: code review and deep-review council lane.
-- `architect`: architecture, module boundary, API, migration, and tradeoff review.
-- `test`: test strategy, fixtures, and regression coverage.
-- `security`: defensive security review and security council lane.
+- `primary`: defaults to Sol for planning, fixing, Oracle, architecture, and high-stakes specialist work.
+- `balanced`: defaults to Terra for routine orchestration, general work, exploration, docs, design, titles, summaries, and compaction.
 
 Use a different provider model list:
 
@@ -118,8 +111,8 @@ opencode debug skill
 Run a live model smoke test if desired:
 
 ```bash
-opencode run --agent build "Respond with exactly: ROUTING_OK_CORE"
-opencode run --agent build -m openai/gpt-5.3-codex-spark "Respond with exactly: ROUTING_OK_SPARK"
+opencode run --agent build -m openai/gpt-5.6-sol "Respond with exactly: ROUTING_OK_SOL"
+opencode run --agent build -m openai/gpt-5.6-terra "Respond with exactly: ROUTING_OK_TERRA"
 ```
 
 Restart any already-running OpenCode session after copying or editing config files. OpenCode loads config at startup.
