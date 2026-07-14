@@ -2,9 +2,11 @@
 
 Use this routing policy for any project using this template.
 
-- Use medium effort for routine orchestration and implementation, and high effort for planning, fixing, and review.
-- Reserve xhigh effort for Oracle, deep council work, or high-stakes specialist escalation.
-- Use the configured primary/deep model for demanding work and the configured fast/balanced model for routine work; route exploration, docs research, and title utilities to the fast/balanced model at low effort.
+- Use the configured primary route at medium effort for routine orchestration and build work, and at high effort for planning, fixing, security review, and architecture.
+- Reserve the configured primary route at xhigh effort for Oracle escalation.
+- Use the configured balanced route for general work, source synthesis, technical summaries, compaction, design, and normal review.
+- Use the configured utility route at none or low effort for exploration, titles, utility/high-volume work, and fast sanity checks.
+- Use the configured deep-review route at high effort only for the bounded deep-review council member.
 - Delegate focused second-pass work instead of making one agent solve every concern.
 - Use `@code-reviewer` for correctness, regression, maintainability, edge-case, and test-gap review.
 - Use `@repo-architect` for architecture decisions, migrations, module boundaries, API contracts, and sequencing.

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+shopt -s extglob
 
 PROJECT_PATH=""
 FORCE="${FORCE:-0}"
 NON_INTERACTIVE="${NON_INTERACTIVE:-0}"
-PROVIDER="${OPENCODE_MODEL_PROVIDER:-openai}"
 OPENCODE_BIN="${OPENCODE_BIN:-opencode}"
 
 while [[ $# -gt 0 ]]; do
@@ -15,17 +15,13 @@ while [[ $# -gt 0 ]]; do
     --non-interactive)
       NON_INTERACTIVE="1"
       ;;
-    --provider)
-      shift
-      if [[ $# -eq 0 ]]; then
-        echo "--provider requires a value" >&2
-        exit 1
-      fi
-      PROVIDER="$1"
-      ;;
     -h|--help)
-      echo "Usage: bash ./scripts/install.sh [project-path] [--force] [--non-interactive] [--provider openai]"
+      echo "Usage: bash ./scripts/install.sh [project-path] [--force] [--non-interactive]"
       exit 0
+      ;;
+    -*)
+      echo "Unexpected option: $1" >&2
+      exit 1
       ;;
     *)
       if [[ -n "$PROJECT_PATH" ]]; then
@@ -43,19 +39,42 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_DIR="$REPO_ROOT/template/.opencode"
 DEST_DIR="$PROJECT_PATH/.opencode"
+STAGING_DIR=""
+STAGED_CONFIG_DIR=""
 
-MODEL_KEYS=(primary balanced)
+cleanup_staging() {
+  if [[ -n "$STAGING_DIR" && -d "$STAGING_DIR" ]]; then
+    rm -rf -- "$STAGING_DIR"
+  fi
+}
+
+trim_input() {
+  local value="$1"
+  value="${value##+([[:space:]])}"
+  value="${value%%+([[:space:]])}"
+  printf '%s' "$value"
+}
+
+trap cleanup_staging EXIT
+
+MODEL_KEYS=(primary balanced utility deep)
 MODEL_TITLES=(
-  "Primary and deep reasoning"
-  "Fast and balanced work"
+  "Primary Sol"
+  "Balanced Terra"
+  "Utility Luna"
+  "Deep Sol-Pro"
 )
 MODEL_DESCRIPTIONS=(
-  "Planning, fixing, Oracle, architecture, and high-stakes specialist work."
-  "Routine orchestration, general work, exploration, docs, design, titles, summaries, and compaction."
+  "Routine orchestration and build, plus high-effort planning, fixing, security, and architecture."
+  "General work, source synthesis, summaries, compaction, design, and normal review."
+  "Exploration, titles, high-volume utility work, and fast sanity checks."
+  "Bounded deep-review council work only."
 )
 MODEL_DEFAULTS=(
   "openai/gpt-5.6-sol"
   "openai/gpt-5.6-terra"
+  "openai/gpt-5.6-luna"
+  "openai/gpt-5.6-sol-pro"
 )
 
 JSON_RUNTIME=""
@@ -77,10 +96,11 @@ fi
 MODELS=()
 if command -v "$OPENCODE_BIN" >/dev/null 2>&1; then
   while IFS= read -r model; do
-    if [[ -n "$model" && "$model" == */* ]]; then
+    model="$(trim_input "$model")"
+    if [[ "$model" =~ ^openai/[^[:space:]]+$ ]]; then
       MODELS+=("$model")
     fi
-  done < <("$OPENCODE_BIN" models "$PROVIDER" </dev/null 2>/dev/null || true)
+  done < <("$OPENCODE_BIN" models openai </dev/null 2>/dev/null || true)
 fi
 
 select_model() {
@@ -115,13 +135,13 @@ select_model() {
       done
     else
       echo "" >&2
-      echo "No models were returned by opencode. You can still type a full provider/model id." >&2
+      echo "No OpenAI models were returned by opencode. You can still type a full openai/model id." >&2
     fi
 
-    if ! read -r -p "Choose model number or provider/model for '$key' [Enter = default]: " answer; then
+    if ! read -r -p "Choose model number or openai/model for '$key' [Enter = default]: " answer; then
       answer=""
     fi
-    answer="${answer//[$'\t\r\n ']}"
+    answer="$(trim_input "$answer")"
 
     if [[ -z "$answer" ]]; then
       printf '%s\n' "$default_model"
@@ -129,34 +149,36 @@ select_model() {
     fi
 
     if [[ "$answer" =~ ^[0-9]+$ ]]; then
-      selected_index=$((answer - 1))
+      selected_index=$((10#$answer - 1))
       if [[ $selected_index -ge 0 && $selected_index -lt ${#MODELS[@]} ]]; then
         printf '%s\n' "${MODELS[$selected_index]}"
         return 0
       fi
     fi
 
-    if [[ "$answer" == */* ]]; then
+    if [[ "$answer" =~ ^openai/[^[:space:]]+$ ]]; then
       printf '%s\n' "$answer"
       return 0
     fi
 
-    echo "Invalid selection. Use a listed number, press Enter for default, or type provider/model." >&2
+    echo "Invalid selection. Use a listed number, press Enter for default, or type a valid openai/model id without whitespace." >&2
   done
 }
 
 apply_model_choices() {
-  local opencode_config="$DEST_DIR/opencode.jsonc"
-  local slim_config="$DEST_DIR/oh-my-opencode-slim.jsonc"
+  local opencode_config="$STAGED_CONFIG_DIR/opencode.jsonc"
+  local slim_config="$STAGED_CONFIG_DIR/oh-my-opencode-slim.jsonc"
 
   if [[ "$JSON_RUNTIME" == "node" ]]; then
-    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" <<'NODE'
+    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" "$UTILITY_MODEL" "$DEEP_MODEL" <<'NODE'
 const fs = require('fs');
 const [
   opencodePath,
   slimPath,
   primary,
   balanced,
+  utility,
+  deep,
 ] = process.argv.slice(2);
 
 function readJson(path) {
@@ -169,17 +191,23 @@ function writeJson(path, value) {
 
 const opencode = readJson(opencodePath);
 opencode.model = primary;
-opencode.small_model = balanced;
+opencode.small_model = utility;
 opencode.agent.build.model = primary;
 opencode.agent.build.variant = 'medium';
+opencode.agent.build.mode = 'primary';
+opencode.agent.build.disable = false;
+opencode.agent.build.hidden = false;
 opencode.agent.plan.model = primary;
 opencode.agent.plan.variant = 'high';
+opencode.agent.plan.mode = 'primary';
+opencode.agent.plan.disable = false;
+opencode.agent.plan.hidden = false;
 opencode.agent.general.model = balanced;
 opencode.agent.general.variant = 'medium';
-opencode.agent.explore.model = balanced;
+opencode.agent.explore.model = utility;
 opencode.agent.explore.variant = 'low';
-opencode.agent.title.model = balanced;
-opencode.agent.title.variant = 'low';
+opencode.agent.title.model = utility;
+opencode.agent.title.variant = 'none';
 opencode.agent.summary.model = balanced;
 opencode.agent.summary.variant = 'medium';
 opencode.agent.compaction.model = balanced;
@@ -194,19 +222,19 @@ preset.orchestrator.model = [
 ];
 preset.oracle.model = [
   { id: primary, variant: 'xhigh' },
-  { id: balanced, variant: 'high' },
+  { id: balanced, variant: 'xhigh' },
 ];
 preset.council.model = [
   { id: primary, variant: 'high' },
   { id: balanced, variant: 'high' },
 ];
 preset.explorer.model = [
+  { id: utility, variant: 'low' },
   { id: balanced, variant: 'low' },
-  { id: primary, variant: 'low' },
 ];
 preset.librarian.model = [
   { id: balanced, variant: 'low' },
-  { id: primary, variant: 'low' },
+  { id: utility, variant: 'low' },
 ];
 preset.fixer.model = [
   { id: primary, variant: 'high' },
@@ -214,21 +242,22 @@ preset.fixer.model = [
 ];
 preset.designer.model = [
   { id: balanced, variant: 'medium' },
-  { id: primary, variant: 'high' },
+  { id: primary, variant: 'medium' },
 ];
 slim.agents['code-reviewer'].model = balanced;
 slim.agents['code-reviewer'].variant = 'high';
 slim.agents['repo-architect'].model = primary;
-slim.agents['repo-architect'].variant = 'xhigh';
+slim.agents['repo-architect'].variant = 'high';
 slim.agents['test-writer'].model = balanced;
 slim.agents['test-writer'].variant = 'medium';
 slim.agents['security-reviewer'].model = primary;
-slim.agents['security-reviewer'].variant = 'xhigh';
+slim.agents['security-reviewer'].variant = 'high';
 const councilPreset = slim.council.presets['generic-review-board'];
+slim.council.timeout = 300000;
 slim.council.councillor_retries = 1;
-councilPreset['deep-review'].model = primary;
-councilPreset['deep-review'].variant = 'xhigh';
-councilPreset['fast-sanity'].model = balanced;
+councilPreset['deep-review'].model = deep;
+councilPreset['deep-review'].variant = 'high';
+councilPreset['fast-sanity'].model = utility;
 councilPreset['fast-sanity'].variant = 'low';
 councilPreset['security-sanity'].model = balanced;
 councilPreset['security-sanity'].variant = 'high';
@@ -238,7 +267,7 @@ NODE
   fi
 
   if [[ "$JSON_RUNTIME" == "python3" ]]; then
-    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" <<'PY'
+    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" "$UTILITY_MODEL" "$DEEP_MODEL" <<'PY'
 import json
 import sys
 
@@ -247,6 +276,8 @@ import sys
     slim_path,
     primary,
     balanced,
+    utility,
+    deep,
 ) = sys.argv[1:]
 
 def read_json(path):
@@ -260,12 +291,12 @@ def write_json(path, value):
 
 opencode = read_json(opencode_path)
 opencode["model"] = primary
-opencode["small_model"] = balanced
-opencode["agent"]["build"].update(model=primary, variant="medium")
-opencode["agent"]["plan"].update(model=primary, variant="high")
+opencode["small_model"] = utility
+opencode["agent"]["build"].update(model=primary, variant="medium", mode="primary", disable=False, hidden=False)
+opencode["agent"]["plan"].update(model=primary, variant="high", mode="primary", disable=False, hidden=False)
 opencode["agent"]["general"].update(model=balanced, variant="medium")
-opencode["agent"]["explore"].update(model=balanced, variant="low")
-opencode["agent"]["title"].update(model=balanced, variant="low")
+opencode["agent"]["explore"].update(model=utility, variant="low")
+opencode["agent"]["title"].update(model=utility, variant="none")
 opencode["agent"]["summary"].update(model=balanced, variant="medium")
 opencode["agent"]["compaction"].update(model=balanced, variant="medium")
 write_json(opencode_path, opencode)
@@ -278,19 +309,19 @@ preset["orchestrator"]["model"] = [
 ]
 preset["oracle"]["model"] = [
     {"id": primary, "variant": "xhigh"},
-    {"id": balanced, "variant": "high"},
+    {"id": balanced, "variant": "xhigh"},
 ]
 preset["council"]["model"] = [
     {"id": primary, "variant": "high"},
     {"id": balanced, "variant": "high"},
 ]
 preset["explorer"]["model"] = [
+    {"id": utility, "variant": "low"},
     {"id": balanced, "variant": "low"},
-    {"id": primary, "variant": "low"},
 ]
 preset["librarian"]["model"] = [
     {"id": balanced, "variant": "low"},
-    {"id": primary, "variant": "low"},
+    {"id": utility, "variant": "low"},
 ]
 preset["fixer"]["model"] = [
     {"id": primary, "variant": "high"},
@@ -298,16 +329,17 @@ preset["fixer"]["model"] = [
 ]
 preset["designer"]["model"] = [
     {"id": balanced, "variant": "medium"},
-    {"id": primary, "variant": "high"},
+    {"id": primary, "variant": "medium"},
 ]
 slim["agents"]["code-reviewer"].update(model=balanced, variant="high")
-slim["agents"]["repo-architect"].update(model=primary, variant="xhigh")
+slim["agents"]["repo-architect"].update(model=primary, variant="high")
 slim["agents"]["test-writer"].update(model=balanced, variant="medium")
-slim["agents"]["security-reviewer"].update(model=primary, variant="xhigh")
+slim["agents"]["security-reviewer"].update(model=primary, variant="high")
 council_preset = slim["council"]["presets"]["generic-review-board"]
+slim["council"]["timeout"] = 300000
 slim["council"]["councillor_retries"] = 1
-council_preset["deep-review"].update(model=primary, variant="xhigh")
-council_preset["fast-sanity"].update(model=balanced, variant="low")
+council_preset["deep-review"].update(model=deep, variant="high")
+council_preset["fast-sanity"].update(model=utility, variant="low")
 council_preset["security-sanity"].update(model=balanced, variant="high")
 write_json(slim_path, slim)
 PY
@@ -333,23 +365,21 @@ if [[ -e "$DEST_DIR" && "$FORCE" != "1" ]]; then
   exit 1
 fi
 
-mkdir -p "$DEST_DIR"
-cp -R "$SOURCE_DIR"/. "$DEST_DIR"/
-
 if [[ "$NON_INTERACTIVE" != "1" ]]; then
   echo ""
   echo "Interactive model routing"
-  echo "Provider queried: $PROVIDER"
+  echo "Provider queried: openai"
   if [[ ${#MODELS[@]} -gt 0 ]]; then
-    echo "Found ${#MODELS[@]} model(s) via opencode models $PROVIDER."
+    echo "Found ${#MODELS[@]} model(s) via opencode models openai."
   else
-    echo "No model list was available from opencode models $PROVIDER. Defaults still work if your provider supports them."
+    echo "No model list was available from opencode models openai. Defaults still work when the configured OpenAI models are available."
   fi
   if ! read -r -p "Customize model routing now? [Y/n]: " customize_answer; then
     customize_answer=""
   fi
+  customize_answer="$(trim_input "$customize_answer")"
   case "$customize_answer" in
-    n|N|no|NO|No)
+    n|N|[nN][oO])
       NON_INTERACTIVE="1"
       ;;
   esac
@@ -357,6 +387,8 @@ fi
 
 PRIMARY_MODEL=""
 BALANCED_MODEL=""
+UTILITY_MODEL=""
+DEEP_MODEL=""
 
 SELECTED_MODELS=()
 for index in "${!MODEL_KEYS[@]}"; do
@@ -366,8 +398,30 @@ done
 
 PRIMARY_MODEL="${SELECTED_MODELS[0]}"
 BALANCED_MODEL="${SELECTED_MODELS[1]}"
+UTILITY_MODEL="${SELECTED_MODELS[2]}"
+DEEP_MODEL="${SELECTED_MODELS[3]}"
 
+STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/opencode-openai-config.XXXXXX")"
+STAGED_CONFIG_DIR="$STAGING_DIR/.opencode"
+mkdir -p "$STAGED_CONFIG_DIR"
+cp -R "$SOURCE_DIR"/. "$STAGED_CONFIG_DIR"/
 apply_model_choices
+
+if [[ "$FORCE" != "1" ]]; then
+  if [[ -e "$DEST_DIR" ]]; then
+    echo "Target acquired .opencode during installation. No files were copied; re-run with --force only if overwriting is intended." >&2
+    exit 1
+  fi
+  if ! mkdir "$DEST_DIR"; then
+    echo "Could not exclusively create target .opencode; no files were copied." >&2
+    exit 1
+  fi
+else
+  mkdir -p "$DEST_DIR"
+fi
+cp -R "$STAGED_CONFIG_DIR"/. "$DEST_DIR"/
+cleanup_staging
+STAGING_DIR=""
 
 echo "Installed generic OpenCode config to $DEST_DIR"
 echo ""

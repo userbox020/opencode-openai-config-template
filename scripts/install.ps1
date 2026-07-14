@@ -1,8 +1,8 @@
+[CmdletBinding()]
 param(
   [string]$ProjectPath = (Get-Location).Path,
   [switch]$Force,
-  [switch]$NonInteractive,
-  [string]$Provider = "openai"
+  [switch]$NonInteractive
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,15 +10,27 @@ $ErrorActionPreference = "Stop"
 $ModelSlots = @(
   [ordered]@{
     Key = "primary"
-    Title = "Primary and deep reasoning"
-    Description = "Planning, fixing, Oracle, architecture, and high-stakes specialist work."
+    Title = "Primary Sol"
+    Description = "Routine orchestration and build, plus high-effort planning, fixing, security, and architecture."
     Default = "openai/gpt-5.6-sol"
   },
   [ordered]@{
     Key = "balanced"
-    Title = "Fast and balanced work"
-    Description = "Routine orchestration, general work, exploration, docs, design, titles, summaries, and compaction."
+    Title = "Balanced Terra"
+    Description = "General work, source synthesis, summaries, compaction, design, and normal review."
     Default = "openai/gpt-5.6-terra"
+  },
+  [ordered]@{
+    Key = "utility"
+    Title = "Utility Luna"
+    Description = "Exploration, titles, high-volume utility work, and fast sanity checks."
+    Default = "openai/gpt-5.6-luna"
+  },
+  [ordered]@{
+    Key = "deep"
+    Title = "Deep Sol-Pro"
+    Description = "Bounded deep-review council work only."
+    Default = "openai/gpt-5.6-sol-pro"
   }
 )
 
@@ -35,8 +47,7 @@ function Get-OpenCodeCommand {
 
 function Get-AvailableModels {
   param(
-    [string]$OpenCodeCommand,
-    [string]$ProviderName
+    [string]$OpenCodeCommand
   )
 
   if (-not $OpenCodeCommand) {
@@ -44,7 +55,9 @@ function Get-AvailableModels {
   }
 
   try {
-    $Models = @(& $OpenCodeCommand models $ProviderName 2>$null | ForEach-Object { $_.Trim() } | Where-Object { $_ -match "^[^/\s]+/.+" })
+    $Models = @(& $OpenCodeCommand models openai 2>$null | ForEach-Object {
+      if ($null -ne $_) { $_.Trim() }
+    } | Where-Object { $_ -match "^openai/[^\s]+$" })
     if ($Models.Count -gt 0) {
       return $Models
     }
@@ -86,11 +99,15 @@ function Select-Model {
       }
     } else {
       Write-Host ""
-      Write-Host "No models were returned by opencode. You can still type a full provider/model id."
+      Write-Host "No OpenAI models were returned by opencode. You can still type a full openai/model id."
     }
 
-    $Answer = Read-Host "Choose model number or provider/model for '$($Slot["Key"])' [Enter = default]"
-    $Answer = $Answer.Trim()
+    $Answer = Read-Host "Choose model number or openai/model for '$($Slot["Key"])' [Enter = default]"
+    if ($null -eq $Answer) {
+      $Answer = ""
+    } else {
+      $Answer = $Answer.Trim()
+    }
 
     if ($Answer -eq "") {
       return $Default
@@ -103,11 +120,11 @@ function Select-Model {
       }
     }
 
-    if ($Answer -match "^[^\s/]+/.+$") {
+    if ($Answer -match "^openai/[^\s]+$") {
       return $Answer
     }
 
-    Write-Host "Invalid selection. Use a listed number, press Enter for default, or type provider/model."
+    Write-Host "Invalid selection. Use a listed number, press Enter for default, or type a valid openai/model id without whitespace."
   }
 }
 
@@ -134,19 +151,27 @@ function Apply-ModelChoices {
   $OpenCodeConfig = Get-Content -LiteralPath $OpenCodeConfigPath -Raw | ConvertFrom-Json
   $Primary = $Models["primary"]
   $Balanced = $Models["balanced"]
+  $Utility = $Models["utility"]
+  $Deep = $Models["deep"]
 
   $OpenCodeConfig.model = $Primary
-  $OpenCodeConfig.small_model = $Balanced
+  $OpenCodeConfig.small_model = $Utility
   $OpenCodeConfig.agent.build.model = $Primary
   $OpenCodeConfig.agent.build.variant = "medium"
+  $OpenCodeConfig.agent.build.mode = "primary"
+  $OpenCodeConfig.agent.build.disable = $false
+  $OpenCodeConfig.agent.build.hidden = $false
   $OpenCodeConfig.agent.plan.model = $Primary
   $OpenCodeConfig.agent.plan.variant = "high"
+  $OpenCodeConfig.agent.plan.mode = "primary"
+  $OpenCodeConfig.agent.plan.disable = $false
+  $OpenCodeConfig.agent.plan.hidden = $false
   $OpenCodeConfig.agent.general.model = $Balanced
   $OpenCodeConfig.agent.general.variant = "medium"
-  $OpenCodeConfig.agent.explore.model = $Balanced
+  $OpenCodeConfig.agent.explore.model = $Utility
   $OpenCodeConfig.agent.explore.variant = "low"
-  $OpenCodeConfig.agent.title.model = $Balanced
-  $OpenCodeConfig.agent.title.variant = "low"
+  $OpenCodeConfig.agent.title.model = $Utility
+  $OpenCodeConfig.agent.title.variant = "none"
   $OpenCodeConfig.agent.summary.model = $Balanced
   $OpenCodeConfig.agent.summary.variant = "medium"
   $OpenCodeConfig.agent.compaction.model = $Balanced
@@ -161,19 +186,19 @@ function Apply-ModelChoices {
   )
   $Preset.oracle.model = @(
     [pscustomobject]@{ id = $Primary; variant = "xhigh" },
-    [pscustomobject]@{ id = $Balanced; variant = "high" }
+    [pscustomobject]@{ id = $Balanced; variant = "xhigh" }
   )
   $Preset.council.model = @(
     [pscustomobject]@{ id = $Primary; variant = "high" },
     [pscustomobject]@{ id = $Balanced; variant = "high" }
   )
   $Preset.explorer.model = @(
-    [pscustomobject]@{ id = $Balanced; variant = "low" },
-    [pscustomobject]@{ id = $Primary; variant = "low" }
+    [pscustomobject]@{ id = $Utility; variant = "low" },
+    [pscustomobject]@{ id = $Balanced; variant = "low" }
   )
   $Preset.librarian.model = @(
     [pscustomobject]@{ id = $Balanced; variant = "low" },
-    [pscustomobject]@{ id = $Primary; variant = "low" }
+    [pscustomobject]@{ id = $Utility; variant = "low" }
   )
   $Preset.fixer.model = @(
     [pscustomobject]@{ id = $Primary; variant = "high" },
@@ -181,23 +206,24 @@ function Apply-ModelChoices {
   )
   $Preset.designer.model = @(
     [pscustomobject]@{ id = $Balanced; variant = "medium" },
-    [pscustomobject]@{ id = $Primary; variant = "high" }
+    [pscustomobject]@{ id = $Primary; variant = "medium" }
   )
 
   $SlimConfig.agents."code-reviewer".model = $Balanced
   $SlimConfig.agents."code-reviewer".variant = "high"
   $SlimConfig.agents."repo-architect".model = $Primary
-  $SlimConfig.agents."repo-architect".variant = "xhigh"
+  $SlimConfig.agents."repo-architect".variant = "high"
   $SlimConfig.agents."test-writer".model = $Balanced
   $SlimConfig.agents."test-writer".variant = "medium"
   $SlimConfig.agents."security-reviewer".model = $Primary
-  $SlimConfig.agents."security-reviewer".variant = "xhigh"
+  $SlimConfig.agents."security-reviewer".variant = "high"
 
   $CouncilPreset = $SlimConfig.council.presets."generic-review-board"
+  $SlimConfig.council.timeout = 300000
   $SlimConfig.council.councillor_retries = 1
-  $CouncilPreset."deep-review".model = $Primary
-  $CouncilPreset."deep-review".variant = "xhigh"
-  $CouncilPreset."fast-sanity".model = $Balanced
+  $CouncilPreset."deep-review".model = $Deep
+  $CouncilPreset."deep-review".variant = "high"
+  $CouncilPreset."fast-sanity".model = $Utility
   $CouncilPreset."fast-sanity".variant = "low"
   $CouncilPreset."security-sanity".model = $Balanced
   $CouncilPreset."security-sanity".variant = "high"
@@ -220,28 +246,27 @@ if ((Test-Path -LiteralPath $Destination) -and -not $Force) {
   throw "Target already has .opencode. Re-run with -Force to merge and overwrite matching template files."
 }
 
-if (-not (Test-Path -LiteralPath $Destination)) {
-  New-Item -ItemType Directory -Path $Destination | Out-Null
-}
-
-Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $Destination -Recurse -Force
-
 $OpenCodeCommand = Get-OpenCodeCommand
-$AvailableModels = Get-AvailableModels -OpenCodeCommand $OpenCodeCommand -ProviderName $Provider
+$AvailableModels = Get-AvailableModels -OpenCodeCommand $OpenCodeCommand
 $SkipModelPrompt = $NonInteractive
 
 if (-not $NonInteractive) {
   ""
   "Interactive model routing"
-  "Provider queried: $Provider"
+  "Provider queried: openai"
   if ($AvailableModels.Count -gt 0) {
-    "Found $($AvailableModels.Count) model(s) via opencode models $Provider."
+    "Found $($AvailableModels.Count) model(s) via opencode models openai."
   } else {
-    "No model list was available from opencode models $Provider. Defaults still work if your provider supports them."
+    "No model list was available from opencode models openai. Defaults still work when the configured OpenAI models are available."
   }
 
   $CustomizeAnswer = Read-Host "Customize model routing now? [Y/n]"
-  if ($CustomizeAnswer.Trim() -match "^(n|no)$") {
+  if ($null -eq $CustomizeAnswer) {
+    $CustomizeAnswer = ""
+  } else {
+    $CustomizeAnswer = $CustomizeAnswer.Trim()
+  }
+  if ($CustomizeAnswer -match "^(n|no)$") {
     $SkipModelPrompt = $true
   }
 }
@@ -251,7 +276,28 @@ foreach ($Slot in $ModelSlots) {
   $SelectedModels[$Slot["Key"]] = Select-Model -Slot $Slot -AvailableModels $AvailableModels -SkipPrompt:$SkipModelPrompt
 }
 
-Apply-ModelChoices -DestinationPath $Destination -Models $SelectedModels
+$StagingRoot = $null
+try {
+  $StagingRoot = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("opencode-openai-config-" + [guid]::NewGuid().ToString("N"))
+  $StagedConfig = Join-Path -Path $StagingRoot -ChildPath ".opencode"
+  New-Item -ItemType Directory -Path $StagedConfig | Out-Null
+  Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $StagedConfig -Recurse -Force
+  Apply-ModelChoices -DestinationPath $StagedConfig -Models $SelectedModels
+
+  if (-not $Force) {
+    if (Test-Path -LiteralPath $Destination) {
+      throw "Target acquired .opencode during installation. No files were copied; re-run with -Force only if overwriting is intended."
+    }
+    New-Item -ItemType Directory -Path $Destination | Out-Null
+  } elseif (-not (Test-Path -LiteralPath $Destination)) {
+    New-Item -ItemType Directory -Path $Destination | Out-Null
+  }
+  Get-ChildItem -LiteralPath $StagedConfig -Force | Copy-Item -Destination $Destination -Recurse -Force
+} finally {
+  if ($StagingRoot -and (Test-Path -LiteralPath $StagingRoot)) {
+    Remove-Item -LiteralPath $StagingRoot -Recurse -Force
+  }
+}
 
 "Installed generic OpenCode config to $Destination"
 ""
