@@ -40,6 +40,59 @@
       "model": "openai/gpt-5.6-luna",
       "variant": "low"
     },
+    "explorer": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
+    },
+    "librarian": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
+    },
+    "oracle": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
+    },
+    "fixer": {
+      "permission": {
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny"
+      }
+    },
+    "designer": {
+      "permission": {
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny"
+      }
+    },
     "title": {
       "model": "openai/gpt-5.6-luna",
       "variant": "none"
@@ -51,6 +104,58 @@
     "compaction": {
       "model": "openai/gpt-5.6-terra",
       "variant": "medium"
+    },
+    "code-reviewer": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
+    },
+    "repo-architect": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
+    },
+    "test-writer": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
+    },
+    "security-reviewer": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "apply_patch": "deny",
+        "ast_grep_replace": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "council_session": "deny",
+        "cancel_task": "deny",
+        "todowrite": "deny"
+      }
     }
   },
   "compaction": {

@@ -8,6 +8,9 @@ Use this routing policy for any project using this template.
 - Use the configured utility route at none or low effort for exploration, titles, utility/high-volume work, and fast sanity checks.
 - Use the configured deep-review route at high effort only for the bounded deep-review council member.
 - Delegate focused second-pass work instead of making one agent solve every concern.
+- Keep delegation and task cancellation in the orchestrator lane; implementation agents must not fan out.
+- Use `@explorer` for read-only repository discovery and code-path mapping.
+- Use `@librarian` for external documentation and source research without sending secrets or private code in queries.
 - Use `@code-reviewer` for correctness, regression, maintainability, edge-case, and test-gap review.
 - Use `@repo-architect` for architecture decisions, migrations, module boundaries, API contracts, and sequencing.
 - Use `@test-writer` for targeted tests, reproduction cases, fixtures, and verification commands.

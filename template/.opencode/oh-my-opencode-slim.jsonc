@@ -87,7 +87,11 @@
           }
         ],
         "skills": [],
-        "mcps": []
+        "mcps": [
+          "websearch",
+          "context7",
+          "gh_grep"
+        ]
       },
       "fixer": {
         "model": [

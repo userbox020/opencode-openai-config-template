@@ -23,8 +23,10 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 - Core routing uses Sol as the default model and Luna as the small model. Build is Sol medium; plan is Sol high; general is Terra medium; explore is Luna low; title is Luna none; and summary/compaction are Terra medium. Compaction retains 6 tail turns.
 - Equal-effort fallbacks accommodate Slim 2.0.5 behavior: orchestrator Sol medium → Terra medium; Oracle Sol xhigh → Terra xhigh; council Sol high → Terra high; explorer Luna low → Terra low; librarian Terra low → Luna low; fixer Sol high → Terra high; designer Terra medium → Sol medium.
 - Council configuration sets a 300-second timeout and requests one councillor retry. Deep review uses Sol-Pro high, fast sanity uses Luna low, and security sanity uses Terra high.
-- Generic specialists route code review to Terra high, architecture to Sol high, test writing to Terra medium, and security review to Sol high.
+- Generic specialists route code review to Terra high, architecture to Sol high, test strategy to Terra medium, and security review to Sol high.
 - These are template defaults. Customized installations substitute four model slots while retaining the documented effort variants and fallback order.
+- The orchestrator is the only normal lane allowed to delegate. Fixer and designer can edit but cannot spawn agents; explorer, librarian, Oracle, and the project review specialists are enforced read-only.
+- Librarian alone receives the bundled web search, Context7, and GitHub grep MCPs for external research. Other normal lanes do not receive those MCPs.
 - Secret-like files are read-gated and edit-denied by default.
 - Risky shell operations such as `git push`, package publish, production deploy, `kubectl`, `terraform apply`, live transaction broadcasts, and destructive cleanup ask first.
 
@@ -134,6 +136,11 @@ Restart any already-running OpenCode session after copying or editing config fil
 
 - `orchestrator`: primary project coordinator.
 - `oracle`: focused clarification and second-pass reasoning.
+- `explorer`: read-only repository discovery and code-path mapping.
+- `librarian`: read-only external documentation and source research.
+- `fixer`: bounded implementation without subagent delegation.
+- `designer`: UI/UX implementation and review without subagent delegation.
+- `council`: explicit, higher-cost multi-model review.
 - `code-reviewer`: correctness, maintainability, regression, and diff review.
 - `repo-architect`: architecture, module boundaries, migration planning, and tradeoffs.
 - `test-writer`: test strategy, fixtures, edge cases, and regression coverage.
@@ -145,6 +152,7 @@ The template defaults to normal coding productivity while protecting common dang
 
 - Do not read or summarize secrets unless explicitly authorized in the current turn.
 - Do not edit secret-bearing files.
+- Do not place secrets or private code in librarian queries because enabled research MCPs send queries to remote services.
 - Ask before publishing packages, pushing git branches, deploying infrastructure, touching Kubernetes, running production migrations, or broadcasting transactions.
 - Keep security work defensive and scoped to repositories, systems, and targets you are authorized to review.
 

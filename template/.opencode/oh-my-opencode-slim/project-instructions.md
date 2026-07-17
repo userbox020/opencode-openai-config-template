@@ -9,6 +9,8 @@ This workspace is for authorized software engineering on the current project.
 - Do not publish packages, push branches, deploy infrastructure, touch production systems, broadcast transactions, or run destructive cleanup without explicit current-turn authorization.
 - Prefer read-only analysis first, then minimal edits, then verification with the repository's existing tooling.
 - Use `@code-reviewer`, `@repo-architect`, `@test-writer`, `@security-reviewer`, `@oracle`, and council members for second-pass checks when the work benefits from focused review.
+- Keep delegation in the orchestrator lane. Explorer, librarian, Oracle, and project review specialists are read-only; fixer and designer may implement but must not spawn agents.
+- Use `@librarian` for external documentation and source research. Never include secrets or private code in remote search queries.
 - Keep security work defensive and scoped to repositories, systems, and targets the user is authorized to review.
 - If a request cannot be handled safely, reframe it into defensive validation, remediation, test design, or documentation.
 - Use the configured primary route at medium effort for routine orchestration and build; use it at high effort for planning, fixing, security review, and architecture; reserve its xhigh route for Oracle escalation.
