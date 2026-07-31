@@ -9,11 +9,9 @@ This workspace is for authorized software engineering on the current project.
 - Do not publish packages, push branches, deploy infrastructure, touch production systems, broadcast transactions, or run destructive cleanup without explicit current-turn authorization.
 - Prefer read-only analysis first, then minimal edits, then verification with the repository's existing tooling.
 - Use `@code-reviewer`, `@repo-architect`, `@test-writer`, `@security-reviewer`, `@oracle`, and council members for second-pass checks when the work benefits from focused review.
-- Keep delegation in the orchestrator lane. Explorer, librarian, Oracle, and project review specialists are read-only; fixer and designer may implement but must not spawn agents.
-- Use `@librarian` for external documentation and source research. Never include secrets or private code in remote search queries.
 - Keep security work defensive and scoped to repositories, systems, and targets the user is authorized to review.
 - If a request cannot be handled safely, reframe it into defensive validation, remediation, test design, or documentation.
-- Use the configured primary route at medium effort for routine orchestration and build; use it at high effort for planning, fixing, security review, and architecture; reserve its xhigh route for Oracle escalation.
-- Use the configured balanced route for general work, source synthesis, technical summaries, compaction, design, and normal review.
-- Use the configured utility route at none or low effort for exploration, titles, utility/high-volume tasks, and fast sanity checks.
-- Use the configured deep-review route at high effort only for bounded deep council review.
+- Respect the active routing profile and do not override configured agent models unless the user explicitly asks.
+- Keep routine work on the configured everyday routes; escalate difficult, ambiguous, security-sensitive, or high-value work to the configured deeper routes.
+- Use utility routes for clear, repeatable, high-volume tasks whose success criteria are easy to check.
+- Reserve max effort and deep council review for bounded hard problems where the added usage is justified.

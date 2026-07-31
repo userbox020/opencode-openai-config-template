@@ -1,12 +1,9 @@
 {
   "$schema": "https://unpkg.com/oh-my-opencode-slim@2.0.5/oh-my-opencode-slim.schema.json",
-  "preset": "generic-openai",
+  "preset": "balanced",
   "autoUpdate": false,
   "fallback": {
-    "enabled": true,
-    "timeoutMs": 30000,
-    "retryDelayMs": 500,
-    "retry_on_empty": true
+    "enabled": true
   },
   "backgroundJobs": {
     "maxSessionsPerAgent": 3,
@@ -14,100 +11,38 @@
     "readContextMaxFiles": 12
   },
   "presets": {
-    "generic-openai": {
+    "balanced": {
       "orchestrator": {
         "model": [
           {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "medium"
-          },
-          {
             "id": "openai/gpt-5.6-terra",
             "variant": "medium"
-          }
-        ],
-        "skills": [
-          "project-workflow"
-        ],
-        "mcps": []
-      },
-      "oracle": {
-        "model": [
+          },
           {
             "id": "openai/gpt-5.6-sol",
-            "variant": "xhigh"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "xhigh"
+            "variant": "medium"
           }
-        ],
-        "skills": [],
-        "mcps": []
-      },
-      "council": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "high"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "high"
-          }
-        ],
-        "skills": [],
-        "mcps": []
-      },
-      "explorer": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-luna",
-            "variant": "low"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "low"
-          }
-        ],
-        "skills": [
-          "project-workflow"
-        ],
-        "mcps": []
-      },
-      "librarian": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "low"
-          },
-          {
-            "id": "openai/gpt-5.6-luna",
-            "variant": "low"
-          }
-        ],
-        "skills": [],
-        "mcps": [
-          "websearch",
-          "context7",
-          "gh_grep"
         ]
       },
+      "oracle": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "xhigh"
+      },
+      "council": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "high"
+      },
+      "explorer": {
+        "model": "openai/gpt-5.6-luna",
+        "variant": "low"
+      },
+      "librarian": {
+        "model": "openai/gpt-5.6-terra",
+        "variant": "low"
+      },
       "fixer": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "high"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "high"
-          }
-        ],
-        "skills": [
-          "project-workflow"
-        ],
-        "mcps": []
+        "model": "openai/gpt-5.6-sol",
+        "variant": "high"
       },
       "designer": {
         "model": [
@@ -119,16 +54,124 @@
             "id": "openai/gpt-5.6-sol",
             "variant": "medium"
           }
-        ],
-        "skills": [],
-        "mcps": []
+        ]
+      },
+      "code-reviewer": {
+        "model": "openai/gpt-5.6-terra",
+        "variant": "high"
+      },
+      "repo-architect": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "high"
+      },
+      "test-writer": {
+        "model": "openai/gpt-5.6-terra",
+        "variant": "medium"
+      },
+      "security-reviewer": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "high"
+      }
+    },
+    "quality": {
+      "orchestrator": {
+        "model": [
+          {
+            "id": "openai/gpt-5.6-sol",
+            "variant": "medium"
+          },
+          {
+            "id": "openai/gpt-5.6-terra",
+            "variant": "medium"
+          }
+        ]
+      },
+      "oracle": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "max"
+      },
+      "council": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "xhigh"
+      },
+      "explorer": {
+        "model": "openai/gpt-5.6-terra",
+        "variant": "low"
+      },
+      "librarian": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "medium"
+      },
+      "fixer": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "xhigh"
+      },
+      "designer": {
+        "model": [
+          {
+            "id": "openai/gpt-5.6-sol",
+            "variant": "medium"
+          },
+          {
+            "id": "openai/gpt-5.6-terra",
+            "variant": "medium"
+          }
+        ]
+      },
+      "code-reviewer": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "xhigh"
+      },
+      "repo-architect": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "xhigh"
+      },
+      "test-writer": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "high"
+      },
+      "security-reviewer": {
+        "model": "openai/gpt-5.6-sol",
+        "variant": "xhigh"
       }
     }
   },
   "agents": {
+    "orchestrator": {
+      "skills": [
+        "project-workflow"
+      ],
+      "mcps": []
+    },
+    "oracle": {
+      "skills": [],
+      "mcps": []
+    },
+    "council": {
+      "skills": [],
+      "mcps": []
+    },
+    "explorer": {
+      "skills": [
+        "project-workflow"
+      ],
+      "mcps": []
+    },
+    "librarian": {
+      "skills": [],
+      "mcps": []
+    },
+    "fixer": {
+      "skills": [
+        "project-workflow"
+      ],
+      "mcps": []
+    },
+    "designer": {
+      "skills": [],
+      "mcps": []
+    },
     "code-reviewer": {
-      "model": "openai/gpt-5.6-terra",
-      "variant": "high",
       "skills": [
         "project-workflow"
       ],
@@ -137,8 +180,6 @@
       "orchestratorPrompt": "@code-reviewer\n- Role: General code-review specialist for diffs, implementation plans, patches, refactors, and test quality.\n- Delegate when: a change needs second-pass review for correctness, maintainability, regressions, edge cases, or missing tests.\n- Expected output: findings ordered by severity, affected files, rationale, suggested fixes, and residual risks.\n- Do not delegate when: broad repository discovery or initial implementation is still needed."
     },
     "repo-architect": {
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high",
       "skills": [
         "project-workflow"
       ],
@@ -147,8 +188,6 @@
       "orchestratorPrompt": "@repo-architect\n- Role: Architecture and migration reviewer for module boundaries, API contracts, data flow, and technical tradeoffs.\n- Delegate when: the user asks for design choices, large refactors, migrations, dependency boundaries, or implementation sequencing.\n- Expected output: recommended approach, alternatives, risks, migration steps, and verification plan.\n- Do not delegate when: the task is a small isolated edit."
     },
     "test-writer": {
-      "model": "openai/gpt-5.6-terra",
-      "variant": "medium",
       "skills": [
         "project-workflow"
       ],
@@ -157,8 +196,6 @@
       "orchestratorPrompt": "@test-writer\n- Role: Test strategy and regression coverage specialist.\n- Delegate when: new code needs targeted tests, a bug needs reproduction, or existing coverage needs gap analysis.\n- Expected output: concrete tests to add, fixtures, edge cases, expected failures, and commands to run.\n- Do not delegate when: the repository's test framework has not been identified yet."
     },
     "security-reviewer": {
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high",
       "skills": [
         "project-workflow"
       ],
@@ -168,15 +205,15 @@
     }
   },
   "council": {
-    "default_preset": "generic-review-board",
+    "default_preset": "{env:OH_MY_OPENCODE_SLIM_PRESET}",
     "timeout": 300000,
     "councillor_execution_mode": "parallel",
     "councillor_retries": 1,
     "presets": {
-      "generic-review-board": {
+      "balanced": {
         "deep-review": {
-          "model": "openai/gpt-5.6-sol-pro",
-          "variant": "high",
+          "model": "openai/gpt-5.6-sol",
+          "variant": "xhigh",
           "prompt": "Review the proposed change for correctness, maintainability, regression risk, test adequacy, and operational safety. Keep findings concrete and scoped."
         },
         "fast-sanity": {
@@ -186,6 +223,23 @@
         },
         "security-sanity": {
           "model": "openai/gpt-5.6-terra",
+          "variant": "high",
+          "prompt": "Check the summary or diff defensively for secrets handling, authorization, unsafe IO, dependency risk, and deployment hazards. Do not provide operational abuse steps."
+        }
+      },
+      "quality": {
+        "deep-review": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "max",
+          "prompt": "Review the proposed change for correctness, maintainability, regression risk, test adequacy, and operational safety. Keep findings concrete and scoped."
+        },
+        "fast-sanity": {
+          "model": "openai/gpt-5.6-terra",
+          "variant": "low",
+          "prompt": "Check for obvious bugs, missing code references, unclear assumptions, and missing verification steps."
+        },
+        "security-sanity": {
+          "model": "openai/gpt-5.6-sol",
           "variant": "high",
           "prompt": "Check the summary or diff defensively for secrets handling, authorization, unsafe IO, dependency risk, and deployment hazards. Do not provide operational abuse steps."
         }

@@ -1,103 +1,159 @@
-# OpenCode OpenAI Generic Project Config
+# OpenCode OpenAI Project Config
 
-Reusable OpenCode configuration for general software projects. It is OpenAI-specific, project-agnostic, and conservative around secrets, destructive commands, publishing, deployments, and production access.
+Reusable OpenCode configuration for general software projects. It is OpenAI-specific, project-agnostic, and designed for ChatGPT OAuth usage while remaining compatible with OpenAI API-key authentication.
 
 ## What This Includes
 
-- `template/.opencode/opencode.jsonc`: OpenCode project config.
-- `template/.opencode/oh-my-opencode-slim.jsonc`: generic multi-agent routing for `oh-my-opencode-slim`.
+- `template/.opencode/opencode.jsonc`: OpenCode project config and balanced core defaults.
+- `template/.opencode/routing-profile.js`: synchronized `balanced` and `quality` profile selection.
+- `template/.opencode/oh-my-opencode-slim.jsonc`: matching Slim agents, fallbacks, specialists, and council routes.
 - `template/.opencode/oh-my-opencode-slim/project-instructions.md`: project-wide working rules.
-- `template/.opencode/oh-my-opencode-slim/orchestrator_append.md`: generic routing guidance.
 - `template/.opencode/skills/project-workflow/SKILL.md`: reusable workflow skill for any codebase.
 - `scripts/install.ps1`: Windows installer with interactive model selection.
 - `scripts/install.sh`: macOS/Linux installer with interactive model selection.
 
-No API keys, RPC endpoints, private keys, or project-specific paths are included.
+No API keys, OAuth tokens, RPC endpoints, private keys, or project-specific paths are included.
 
-## Balanced GPT-5.6 Defaults
+## Routing Profiles
 
-- **Sol** (`openai/gpt-5.6-sol`) handles routine orchestration and build at medium effort, plus planning, fixing, security review, and architecture at high effort. Oracle escalation uses Sol xhigh.
-- **Terra** (`openai/gpt-5.6-terra`) handles general work, source synthesis, technical summaries, compaction, design, and normal review.
-- **Luna** (`openai/gpt-5.6-luna`) handles utility/high-volume work: exploration and fast sanity at low effort, and titles at none.
-- **Sol-Pro** (`openai/gpt-5.6-sol-pro`) is reserved for one bounded deep-review council member at high effort. It maps to `reasoning.mode=pro`.
-- Core routing uses Sol as the default model and Luna as the small model. Build is Sol medium; plan is Sol high; general is Terra medium; explore is Luna low; title is Luna none; and summary/compaction are Terra medium. Compaction retains 6 tail turns.
-- Equal-effort fallbacks accommodate Slim 2.0.5 behavior: orchestrator Sol medium → Terra medium; Oracle Sol xhigh → Terra xhigh; council Sol high → Terra high; explorer Luna low → Terra low; librarian Terra low → Luna low; fixer Sol high → Terra high; designer Terra medium → Sol medium.
-- Council configuration sets a 300-second timeout and requests one councillor retry. Deep review uses Sol-Pro high, fast sanity uses Luna low, and security sanity uses Terra high.
-- Generic specialists route code review to Terra high, architecture to Sol high, test strategy to Terra medium, and security review to Sol high.
-- These are template defaults. Customized installations substitute four model slots while retaining the documented effort variants and fallback order.
-- The orchestrator is the only normal lane allowed to delegate. Fixer and designer can edit but cannot spawn agents; explorer, librarian, Oracle, and the project review specialists are enforced read-only.
-- Librarian alone receives the bundled web search, Context7, and GitHub grep MCPs for external research. Other normal lanes do not receive those MCPs.
-- Secret-like files are read-gated and edit-denied by default.
-- Risky shell operations such as `git push`, package publish, production deploy, `kubectl`, `terraform apply`, live transaction broadcasts, and destructive cleanup ask first.
+The default `balanced` profile uses Terra as the everyday workhorse, Luna for clear high-volume work, and Sol for difficult or high-value work. The optional `quality` profile promotes more work to Sol and raises reasoning effort.
 
-## Models, Effort, And Pricing
+| Work | Balanced default | Quality |
+| --- | --- | --- |
+| Orchestration and build | Terra medium | Sol medium |
+| Planning and fixing | Sol high | Sol xhigh |
+| General work | Terra medium | Sol medium |
+| Exploration | Luna low | Terra low |
+| Titles | Luna none | Luna none |
+| Summaries | Luna low | Terra medium |
+| Compaction | Terra medium | Sol medium |
+| Oracle | Sol xhigh | Sol max |
+| Council synthesis | Sol high | Sol xhigh |
+| Librarian | Terra low | Sol medium |
+| Design | Terra medium | Sol medium |
+| Code review | Terra high | Sol xhigh |
+| Architecture and security | Sol high | Sol xhigh |
+| Test writing | Terra medium | Sol high |
+| Deep council review | Sol xhigh | Sol max |
+| Fast sanity | Luna low | Terra low |
+| Security sanity | Terra high | Sol high |
 
-Base USD API pricing per 1M tokens as of 2026-07-14 is shown below. Check the [official OpenAI API pricing](https://openai.com/api/pricing/) for current rates.
+The balanced profile sets `openai/gpt-5.6-terra` as OpenCode's default model and `openai/gpt-5.6-luna` as its small model. The quality profile changes those to Sol and Terra respectively.
 
-| Model | Input | Cache read | Output |
+### Switch Profiles
+
+Balanced is used when no profile is specified. Select quality before starting OpenCode:
+
+```powershell
+$env:OPENCODE_ROUTING_PROFILE = "quality"
+opencode.cmd
+```
+
+```bash
+OPENCODE_ROUTING_PROFILE=quality opencode
+```
+
+Set the value to `balanced` to switch back. The accepted values are `balanced` and `quality`; an unknown value logs a warning and safely uses balanced. Restart OpenCode after changing the profile because configuration is loaded at startup.
+
+Do not use Slim's `/preset` command to switch these profiles. It changes only Slim-managed agents and can temporarily desynchronize them from OpenCode's core routes. Use `OPENCODE_ROUTING_PROFILE` and start a fresh OpenCode process.
+
+Do not put this variable in `.opencode/opencode.env`; OpenCode does not automatically source that file. Set it in the launching shell, shell profile, IDE launch configuration, or process manager.
+
+## Pricing And Usage
+
+Rates below were verified against official OpenAI documentation on 2026-07-31. Check the [Codex pricing page](https://developers.openai.com/codex/pricing) and [API pricing page](https://developers.openai.com/api/docs/pricing) for current values.
+
+### ChatGPT OAuth
+
+ChatGPT OAuth usage follows the shared Codex and ChatGPT agentic allowance. It is measured in credits after included plan usage, not billed as ordinary API traffic.
+
+| Model | Input credits | Cached input credits | Output credits |
 | --- | ---: | ---: | ---: |
-| Sol | $5.00 | $0.50 | $30.00 |
-| Terra | $2.50 | $0.25 | $15.00 |
-| Luna | $1.00 | $0.10 | $6.00 |
+| Sol | 125 | 12.5 | 750 |
+| Terra | 50 | 5 | 300 |
+| Luna | 5 | 0.5 | 30 |
 
-Sol, Terra, and Luna all have about 1.05M tokens of context and a 128K maximum output. Higher-context rates apply above 272K input tokens. Sol-Pro pricing is not listed here; check current official pricing before running deep-review work.
+Values are credits per 1M tokens. Codex does not charge for cache writes. Reasoning tokens are included in output usage, so higher efforts can consume substantially more credits even when visible answers stay short.
 
-OpenCode 1.17.12 effectively supports GPT-5.6 effort variants `none`, `low`, `medium`, `high`, and `xhigh`. The default template intentionally never configures `max`: OpenCode stores that value but does not map it to an OpenAI request option, so the defaults use xhigh instead. `-fast` models request the priority service tier; they do not guarantee lower latency or higher quality and are intentionally excluded from the default active routing. Sol-Pro is used only for bounded deep review rather than routine work.
+Approximate local-message limits for ChatGPT Plus and Business are 10-100 Sol, 25-200 Terra, or 250-2,000 Luna messages per shared five-hour window. Pro 5x and Pro 20x increase those ranges proportionally. Task size, context, reasoning, tools, caching, other agentic features, and additional weekly limits affect actual availability.
+
+This cost and allowance ratio is why balanced routing uses Terra for ordinary coding and Luna for repeatable volume work instead of routing every task through Sol.
+
+### API Key
+
+Standard short-context USD API pricing per 1M tokens:
+
+| Model | Input | Cache read | Cache write | Output |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
+| Terra | $2.00 | $0.20 | $2.50 | $12.00 |
+| Luna | $0.20 | $0.02 | $0.25 | $1.20 |
+
+API requests above 272K input tokens use long-context rates for the full request: 2x input/cache rates and 1.5x output rates. API models advertise a 1.05M context window, 922K maximum input, and 128K maximum output. OpenCode 1.18.10 caps ChatGPT OAuth routes at 500K context, 372K input, and 128K output; effective workspace or server limits may be lower.
+
+### Effort, Pro, And Fast
+
+OpenCode 1.18.10 maps GPT-5.6 efforts `none`, `low`, `medium`, `high`, `xhigh`, and `max`. Use the lowest effort that meets the task's quality target. The template reserves `max` for the quality profile's hardest bounded work.
+
+OpenCode's ChatGPT OAuth integration filters generated Pro-mode model IDs, including `openai/gpt-5.6-sol-pro`. This template therefore uses standard `openai/gpt-5.6-sol` with xhigh or max instead of pretending a Pro route is available.
+
+Fast mode is intentionally excluded from active routing. With ChatGPT OAuth it provides roughly 1.5x speed for 2.5x credit consumption on GPT-5.6. API Fast processing has separate rates, currently 2x standard GPT-5.6 token prices.
+
+## Fallback Behavior
+
+Slim 2.0.5 does not preserve a secondary model entry's configured variant when foreground fallback replays a request. The fallback model receives its default effort, currently medium.
+
+To avoid silent effort changes, this template configures automatic fallback only for medium-effort routes:
+
+- Balanced orchestrator and designer: Terra medium to Sol medium.
+- Quality orchestrator and designer: Sol medium to Terra medium.
+
+High, xhigh, max, low, and none routes use one model and surface failures instead of silently changing effort or cost class. In Slim 2.0.5, foreground fallback is primarily triggered by recognized rate-limit, quota, usage, and overload errors. The plugin's `timeoutMs`, `retryDelayMs`, and `retry_on_empty` schema fields do not control ordinary foreground fallback, so this template does not configure them.
 
 ## Requirements
 
-- OpenCode installed and available as `opencode` or `opencode.cmd`. This template is tested with OpenCode 1.17.12.
-- The `oh-my-opencode-slim` OpenCode plugin, pinned by this template to tested version 2.0.5 for both runtime loading and the editor schema.
-- OpenAI credentials for the configured `openai/...` model IDs.
-- The macOS/Linux installer requires Node.js or Python 3 and verifies the runtime before copying or overwriting destination files.
+- OpenCode 1.18.10 or newer, available as `opencode` or `opencode.cmd`.
+- ChatGPT OAuth access to Sol, Terra, and Luna, or an OpenAI API key with access to those models.
+- The `oh-my-opencode-slim` plugin, pinned to tested version 2.0.5 for runtime and schema.
+- Node.js or Python 3 for the macOS/Linux installer.
 
-The installer queries `opencode models openai` for interactive customization. Catalog presence does not guarantee runtime availability; the defaults are the runtime-verified Sol, Terra, Luna, and Sol-Pro IDs above. If your setup uses different model names, select them during install or edit both:
-
-- `template/.opencode/opencode.jsonc`
-- `template/.opencode/oh-my-opencode-slim.jsonc`
+OpenCode 1.18.10 is required for GPT-5.6 max effort, current OAuth model filtering, cache-write usage accounting, and current OpenAI request options. Slim remains pinned to 2.0.5 because 2.2.8 changes council execution semantics and still does not preserve fallback variants.
 
 ## Install Into A Project
 
-From this repo on Windows:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\path\to\your-project
 ```
 
-The installer asks whether to customize model routing. If you choose yes, it shows each routing slot, a short description, the default model, and the numbered OpenAI models returned by OpenCode.
-
-From this repo on macOS/Linux:
+macOS/Linux:
 
 ```bash
 bash ./scripts/install.sh /path/to/your-project
 ```
 
-If the target project already has `.opencode`, the installer stops unless you pass force mode.
-
-Windows force mode:
+If the target project already has `.opencode`, the installer stops unless force mode is explicitly selected.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\path\to\your-project -Force
 ```
 
-macOS/Linux force mode:
-
 ```bash
 FORCE=1 bash ./scripts/install.sh /path/to/your-project
 ```
 
-Both installers finish prompting and generate the customized configuration in a temporary staging directory before creating or changing the target `.opencode`. Staging is cleaned on success or error. Force mode then merges and overwrites matching template files; it does not delete extra files in the target `.opencode` directory.
+Both installers generate configuration in a temporary staging directory before changing the target. Force mode merges and overwrites matching template files but does not delete extra files from the target `.opencode` directory.
 
-## Interactive Model Routing
+### Model Slots
 
-The installer prompts for four model slots while preserving all role-specific effort variants and fallback order:
+Interactive installation selects three distinct OpenAI models and applies them to both routing profiles:
 
-- `primary`: Sol for orchestration, build, planning, fixing, Oracle, architecture, and security work.
-- `balanced`: Terra for general work, synthesis, summaries, compaction, design, and normal review.
-- `utility`: Luna for exploration, titles, high-volume utility work, and fast sanity checks.
-- `deep`: Sol-Pro for the bounded deep-review council member only.
+- `primary`: Sol by default; must support medium, high, xhigh, and max.
+- `balanced`: Terra by default; must support low, medium, and high.
+- `utility`: Luna by default; must support none and low.
 
-Customization accepts only model IDs of the form `openai/<model>` with no internal whitespace. A custom choice replaces a model slot but retains the template's fixed effort variants and fallback positions, so every selected OpenAI model must support the variants used by that slot.
+When `opencode models openai` returns a catalog, typed IDs must appear in it. Pro-mode IDs ending in `-pro` are excluded because OpenCode's ChatGPT OAuth integration does not expose them. The three slots must be distinct so fallback and profile semantics do not collapse. Catalog presence does not prove that the active ChatGPT workspace or API key can execute every model or effort.
 
 Skip prompts and keep defaults for automation:
 
@@ -109,38 +165,55 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\p
 bash ./scripts/install.sh /path/to/your-project --non-interactive
 ```
 
-You can set `OPENCODE_BIN` for the Unix installer if your OpenCode binary has a custom name. Both installers always query `opencode models openai`; provider customization is not supported.
+Set `OPENCODE_BIN` for either installer if the OpenCode executable has a custom name. Unix CI can set `OPENCODE_INSTALL_JSON_RUNTIME=node` or `OPENCODE_INSTALL_JSON_RUNTIME=python3` to exercise a specific installed JSON runtime.
 
 ## Validate After Install
 
-Run these from the target project:
+Run the repository's dependency-free routing checks before installation:
+
+```bash
+node ./scripts/test-routing.js
+node ./scripts/test-installers.js
+bash -n ./scripts/install.sh
+```
+
+Run these from the target project with no profile variable to inspect balanced routing:
 
 ```bash
 opencode debug config
 opencode debug agent orchestrator
+opencode debug agent build
 opencode debug skill
 ```
 
-Run a live model smoke test if desired:
+Inspect quality routing in a fresh process:
 
-```bash
-opencode run --agent build -m openai/gpt-5.6-sol "Respond with exactly: ROUTING_OK_SOL"
-opencode run --agent build -m openai/gpt-5.6-terra "Respond with exactly: ROUTING_OK_TERRA"
-opencode run --agent build -m openai/gpt-5.6-luna "Respond with exactly: ROUTING_OK_LUNA"
-opencode run --agent build -m openai/gpt-5.6-sol-pro "Respond with exactly: ROUTING_OK_SOL_PRO"
+```powershell
+$env:OPENCODE_ROUTING_PROFILE = "quality"
+opencode.cmd debug config
+opencode.cmd debug agent orchestrator
+opencode.cmd debug agent build
 ```
 
-Restart any already-running OpenCode session after copying or editing config files. OpenCode loads config at startup.
+```bash
+OPENCODE_ROUTING_PROFILE=quality opencode debug config
+OPENCODE_ROUTING_PROFILE=quality opencode debug agent orchestrator
+OPENCODE_ROUTING_PROFILE=quality opencode debug agent build
+```
+
+A routing smoke test should not pass `-m`, because `-m` overrides the route being tested:
+
+```bash
+opencode run --agent build "Respond with exactly: BALANCED_ROUTING_OK"
+OPENCODE_ROUTING_PROFILE=quality opencode run --agent build "Respond with exactly: QUALITY_ROUTING_OK"
+```
+
+Direct `-m openai/...` calls are useful only for checking model availability. They do not verify configured routing.
 
 ## Included Agents
 
 - `orchestrator`: primary project coordinator.
-- `oracle`: focused clarification and second-pass reasoning.
-- `explorer`: read-only repository discovery and code-path mapping.
-- `librarian`: read-only external documentation and source research.
-- `fixer`: bounded implementation without subagent delegation.
-- `designer`: UI/UX implementation and review without subagent delegation.
-- `council`: explicit, higher-cost multi-model review.
+- `oracle`: focused clarification and independent deep reasoning.
 - `code-reviewer`: correctness, maintainability, regression, and diff review.
 - `repo-architect`: architecture, module boundaries, migration planning, and tradeoffs.
 - `test-writer`: test strategy, fixtures, edge cases, and regression coverage.
@@ -148,17 +221,17 @@ Restart any already-running OpenCode session after copying or editing config fil
 
 ## Safety Rules
 
-The template defaults to normal coding productivity while protecting common dangerous surfaces:
+The template provides best-effort guardrails for common dangerous surfaces:
 
-- Do not read or summarize secrets unless explicitly authorized in the current turn.
-- Do not edit secret-bearing files.
-- Do not place secrets or private code in librarian queries because enabled research MCPs send queries to remote services.
-- Ask before publishing packages, pushing git branches, deploying infrastructure, touching Kubernetes, running production migrations, or broadcasting transactions.
-- Keep security work defensive and scoped to repositories, systems, and targets you are authorized to review.
+- Ask before reading common secret-bearing files and deny edits to them.
+- Ask before publishing packages, pushing branches, deploying infrastructure, touching Kubernetes, running production migrations, or broadcasting transactions.
+- Keep security work defensive and scoped to repositories, systems, and targets the user is authorized to review.
+
+Permission patterns cannot recognize every possible secret filename or shell-command spelling. Project instructions remain part of the safety boundary, and users should review the permission rules for their environment.
 
 ## Upload To GitHub
 
-If this folder is not already a git repo:
+If this folder is not already a Git repository:
 
 ```bash
 git init
@@ -166,12 +239,10 @@ git add .
 git commit -m "Add generic OpenCode project config"
 ```
 
-Create and push a private GitHub repo with GitHub CLI:
+Create and push a private GitHub repository with GitHub CLI:
 
 ```bash
 gh repo create opencode-openai-config-template --private --source . --remote origin --push
 ```
 
-Change `--private` to `--public` only if you are sure the repo contains no private notes or project-specific details.
-
-Future repository links should use `https://github.com/<owner>/opencode-openai-config-template`.
+Change `--private` to `--public` only after confirming the repository contains no private notes or project-specific details.

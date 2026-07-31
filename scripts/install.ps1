@@ -11,30 +11,35 @@ $ModelSlots = @(
   [ordered]@{
     Key = "primary"
     Title = "Primary Sol"
-    Description = "Routine orchestration and build, plus high-effort planning, fixing, security, and architecture."
+    Description = "Complex planning, fixing, review, security, architecture, and quality-profile work."
     Default = "openai/gpt-5.6-sol"
   },
   [ordered]@{
     Key = "balanced"
     Title = "Balanced Terra"
-    Description = "General work, source synthesis, summaries, compaction, design, and normal review."
+    Description = "Balanced-profile orchestration and build, plus general work, synthesis, compaction, design, and normal review."
     Default = "openai/gpt-5.6-terra"
   },
   [ordered]@{
     Key = "utility"
     Title = "Utility Luna"
-    Description = "Exploration, titles, high-volume utility work, and fast sanity checks."
+    Description = "Exploration, titles, summaries, high-volume utility work, and fast sanity checks."
     Default = "openai/gpt-5.6-luna"
-  },
-  [ordered]@{
-    Key = "deep"
-    Title = "Deep Sol-Pro"
-    Description = "Bounded deep-review council work only."
-    Default = "openai/gpt-5.6-sol-pro"
   }
 )
 
 function Get-OpenCodeCommand {
+  if ($env:OPENCODE_BIN) {
+    $Configured = Get-Command $env:OPENCODE_BIN -ErrorAction SilentlyContinue
+    if ($Configured) {
+      return $Configured.Source
+    }
+    if (Test-Path -LiteralPath $env:OPENCODE_BIN -PathType Leaf) {
+      return (Resolve-Path -LiteralPath $env:OPENCODE_BIN).Path
+    }
+    return $null
+  }
+
   foreach ($Candidate in @("opencode.cmd", "opencode")) {
     $Command = Get-Command $Candidate -ErrorAction SilentlyContinue
     if ($Command) {
@@ -57,7 +62,9 @@ function Get-AvailableModels {
   try {
     $Models = @(& $OpenCodeCommand models openai 2>$null | ForEach-Object {
       if ($null -ne $_) { $_.Trim() }
-    } | Where-Object { $_ -match "^openai/[^\s]+$" })
+    } | Where-Object {
+      $_ -match "^openai/[A-Za-z0-9._-]+$" -and $_ -notmatch "-pro$"
+    })
     if ($Models.Count -gt 0) {
       return $Models
     }
@@ -120,7 +127,15 @@ function Select-Model {
       }
     }
 
-    if ($Answer -match "^openai/[^\s]+$") {
+    if ($Answer -match "^openai/[A-Za-z0-9._-]+$") {
+      if ($Answer -match "-pro$") {
+        Write-Host "ChatGPT OAuth does not expose OpenCode Pro-mode IDs. Choose a standard model."
+        continue
+      }
+      if ($AvailableModels.Count -gt 0 -and $Answer -notin $AvailableModels) {
+        Write-Host "That model was not returned by opencode models openai. Choose a listed model."
+        continue
+      }
       return $Answer
     }
 
@@ -139,6 +154,55 @@ function ConvertTo-PrettyJsonFile {
   [System.IO.File]::WriteAllText($Path, ($Json + [Environment]::NewLine), $Utf8NoBom)
 }
 
+function Test-OpenCodeVersion {
+  param(
+    [string]$OpenCodeCommand
+  )
+
+  if (-not $OpenCodeCommand) {
+    return
+  }
+
+  try {
+    $RawVersion = @(& $OpenCodeCommand --version 2>$null)[0].Trim()
+    if ($RawVersion -notmatch "^v?(\d+)\.(\d+)\.(\d+)(?:\+[0-9A-Za-z.-]+)?$") {
+      throw "Unrecognized version: $RawVersion"
+    }
+    $VersionText = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+    if ([version]$VersionText -lt [version]"1.18.10") {
+      Write-Warning "OpenCode $RawVersion detected. Upgrade to 1.18.10 or newer before using this template."
+    }
+  } catch {
+    Write-Warning "Could not verify the OpenCode version. This template requires OpenCode 1.18.10 or newer."
+  }
+}
+
+function Set-RoutingProfileModels {
+  param(
+    [string]$Path,
+    [string]$Primary,
+    [string]$Balanced,
+    [string]$Utility
+  )
+
+  $Content = [System.IO.File]::ReadAllText($Path)
+  foreach ($Entry in @(
+    @{ Key = "primary"; Value = $Primary },
+    @{ Key = "balanced"; Value = $Balanced },
+    @{ Key = "utility"; Value = $Utility }
+  )) {
+    $Pattern = "(?m)^(\s*$($Entry.Key):\s*)`"[^`"]+`""
+    $JsonValue = $Entry.Value | ConvertTo-Json -Compress
+    $Content = [regex]::Replace($Content, $Pattern, {
+      param($Match)
+      return $Match.Groups[1].Value + $JsonValue
+    })
+  }
+
+  $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path, $Content, $Utf8NoBom)
+}
+
 function Apply-ModelChoices {
   param(
     [string]$DestinationPath,
@@ -147,16 +211,16 @@ function Apply-ModelChoices {
 
   $OpenCodeConfigPath = Join-Path -Path $DestinationPath -ChildPath "opencode.jsonc"
   $SlimConfigPath = Join-Path -Path $DestinationPath -ChildPath "oh-my-opencode-slim.jsonc"
+  $RoutingProfilePath = Join-Path -Path $DestinationPath -ChildPath "routing-profile.js"
 
   $OpenCodeConfig = Get-Content -LiteralPath $OpenCodeConfigPath -Raw | ConvertFrom-Json
   $Primary = $Models["primary"]
   $Balanced = $Models["balanced"]
   $Utility = $Models["utility"]
-  $Deep = $Models["deep"]
 
-  $OpenCodeConfig.model = $Primary
+  $OpenCodeConfig.model = $Balanced
   $OpenCodeConfig.small_model = $Utility
-  $OpenCodeConfig.agent.build.model = $Primary
+  $OpenCodeConfig.agent.build.model = $Balanced
   $OpenCodeConfig.agent.build.variant = "medium"
   $OpenCodeConfig.agent.build.mode = "primary"
   $OpenCodeConfig.agent.build.disable = $false
@@ -172,61 +236,86 @@ function Apply-ModelChoices {
   $OpenCodeConfig.agent.explore.variant = "low"
   $OpenCodeConfig.agent.title.model = $Utility
   $OpenCodeConfig.agent.title.variant = "none"
-  $OpenCodeConfig.agent.summary.model = $Balanced
-  $OpenCodeConfig.agent.summary.variant = "medium"
+  $OpenCodeConfig.agent.summary.model = $Utility
+  $OpenCodeConfig.agent.summary.variant = "low"
   $OpenCodeConfig.agent.compaction.model = $Balanced
   $OpenCodeConfig.agent.compaction.variant = "medium"
   ConvertTo-PrettyJsonFile -InputObject $OpenCodeConfig -Path $OpenCodeConfigPath
+  Set-RoutingProfileModels -Path $RoutingProfilePath -Primary $Primary -Balanced $Balanced -Utility $Utility
 
   $SlimConfig = Get-Content -LiteralPath $SlimConfigPath -Raw | ConvertFrom-Json
-  $Preset = $SlimConfig.presets."generic-openai"
-  $Preset.orchestrator.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "medium" },
-    [pscustomobject]@{ id = $Balanced; variant = "medium" }
-  )
-  $Preset.oracle.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "xhigh" },
-    [pscustomobject]@{ id = $Balanced; variant = "xhigh" }
-  )
-  $Preset.council.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "high" },
-    [pscustomobject]@{ id = $Balanced; variant = "high" }
-  )
-  $Preset.explorer.model = @(
-    [pscustomobject]@{ id = $Utility; variant = "low" },
-    [pscustomobject]@{ id = $Balanced; variant = "low" }
-  )
-  $Preset.librarian.model = @(
-    [pscustomobject]@{ id = $Balanced; variant = "low" },
-    [pscustomobject]@{ id = $Utility; variant = "low" }
-  )
-  $Preset.fixer.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "high" },
-    [pscustomobject]@{ id = $Balanced; variant = "high" }
-  )
-  $Preset.designer.model = @(
+  $BalancedPreset = $SlimConfig.presets.balanced
+  $BalancedPreset.orchestrator.model = @(
     [pscustomobject]@{ id = $Balanced; variant = "medium" },
     [pscustomobject]@{ id = $Primary; variant = "medium" }
   )
+  $BalancedPreset.oracle.model = $Primary
+  $BalancedPreset.oracle.variant = "xhigh"
+  $BalancedPreset.council.model = $Primary
+  $BalancedPreset.council.variant = "high"
+  $BalancedPreset.explorer.model = $Utility
+  $BalancedPreset.explorer.variant = "low"
+  $BalancedPreset.librarian.model = $Balanced
+  $BalancedPreset.librarian.variant = "low"
+  $BalancedPreset.fixer.model = $Primary
+  $BalancedPreset.fixer.variant = "high"
+  $BalancedPreset.designer.model = @(
+    [pscustomobject]@{ id = $Balanced; variant = "medium" },
+    [pscustomobject]@{ id = $Primary; variant = "medium" }
+  )
+  $BalancedPreset."code-reviewer".model = $Balanced
+  $BalancedPreset."code-reviewer".variant = "high"
+  $BalancedPreset."repo-architect".model = $Primary
+  $BalancedPreset."repo-architect".variant = "high"
+  $BalancedPreset."test-writer".model = $Balanced
+  $BalancedPreset."test-writer".variant = "medium"
+  $BalancedPreset."security-reviewer".model = $Primary
+  $BalancedPreset."security-reviewer".variant = "high"
 
-  $SlimConfig.agents."code-reviewer".model = $Balanced
-  $SlimConfig.agents."code-reviewer".variant = "high"
-  $SlimConfig.agents."repo-architect".model = $Primary
-  $SlimConfig.agents."repo-architect".variant = "high"
-  $SlimConfig.agents."test-writer".model = $Balanced
-  $SlimConfig.agents."test-writer".variant = "medium"
-  $SlimConfig.agents."security-reviewer".model = $Primary
-  $SlimConfig.agents."security-reviewer".variant = "high"
+  $QualityPreset = $SlimConfig.presets.quality
+  $QualityPreset.orchestrator.model = @(
+    [pscustomobject]@{ id = $Primary; variant = "medium" },
+    [pscustomobject]@{ id = $Balanced; variant = "medium" }
+  )
+  $QualityPreset.oracle.model = $Primary
+  $QualityPreset.oracle.variant = "max"
+  $QualityPreset.council.model = $Primary
+  $QualityPreset.council.variant = "xhigh"
+  $QualityPreset.explorer.model = $Balanced
+  $QualityPreset.explorer.variant = "low"
+  $QualityPreset.librarian.model = $Primary
+  $QualityPreset.librarian.variant = "medium"
+  $QualityPreset.fixer.model = $Primary
+  $QualityPreset.fixer.variant = "xhigh"
+  $QualityPreset.designer.model = @(
+    [pscustomobject]@{ id = $Primary; variant = "medium" },
+    [pscustomobject]@{ id = $Balanced; variant = "medium" }
+  )
+  $QualityPreset."code-reviewer".model = $Primary
+  $QualityPreset."code-reviewer".variant = "xhigh"
+  $QualityPreset."repo-architect".model = $Primary
+  $QualityPreset."repo-architect".variant = "xhigh"
+  $QualityPreset."test-writer".model = $Primary
+  $QualityPreset."test-writer".variant = "high"
+  $QualityPreset."security-reviewer".model = $Primary
+  $QualityPreset."security-reviewer".variant = "xhigh"
 
-  $CouncilPreset = $SlimConfig.council.presets."generic-review-board"
   $SlimConfig.council.timeout = 300000
   $SlimConfig.council.councillor_retries = 1
-  $CouncilPreset."deep-review".model = $Deep
-  $CouncilPreset."deep-review".variant = "high"
-  $CouncilPreset."fast-sanity".model = $Utility
-  $CouncilPreset."fast-sanity".variant = "low"
-  $CouncilPreset."security-sanity".model = $Balanced
-  $CouncilPreset."security-sanity".variant = "high"
+  $BalancedCouncil = $SlimConfig.council.presets.balanced
+  $BalancedCouncil."deep-review".model = $Primary
+  $BalancedCouncil."deep-review".variant = "xhigh"
+  $BalancedCouncil."fast-sanity".model = $Utility
+  $BalancedCouncil."fast-sanity".variant = "low"
+  $BalancedCouncil."security-sanity".model = $Balanced
+  $BalancedCouncil."security-sanity".variant = "high"
+  $QualityCouncil = $SlimConfig.council.presets.quality
+  $QualityCouncil."deep-review".model = $Primary
+  $QualityCouncil."deep-review".variant = "max"
+  $QualityCouncil."fast-sanity".model = $Balanced
+  $QualityCouncil."fast-sanity".variant = "low"
+  $QualityCouncil."security-sanity".model = $Primary
+  $QualityCouncil."security-sanity".variant = "high"
   ConvertTo-PrettyJsonFile -InputObject $SlimConfig -Path $SlimConfigPath
 }
 
@@ -247,6 +336,7 @@ if ((Test-Path -LiteralPath $Destination) -and -not $Force) {
 }
 
 $OpenCodeCommand = Get-OpenCodeCommand
+$null = Test-OpenCodeVersion -OpenCodeCommand $OpenCodeCommand
 $AvailableModels = Get-AvailableModels -OpenCodeCommand $OpenCodeCommand
 $SkipModelPrompt = $NonInteractive
 
@@ -274,6 +364,10 @@ if (-not $NonInteractive) {
 $SelectedModels = @{}
 foreach ($Slot in $ModelSlots) {
   $SelectedModels[$Slot["Key"]] = Select-Model -Slot $Slot -AvailableModels $AvailableModels -SkipPrompt:$SkipModelPrompt
+}
+
+if (@($SelectedModels.Values | Select-Object -Unique).Count -ne $ModelSlots.Count) {
+  throw "The primary, balanced, and utility model slots must use distinct models."
 }
 
 $StagingRoot = $null
@@ -305,5 +399,6 @@ try {
 foreach ($Slot in $ModelSlots) {
   "  $($Slot["Key"]): $($SelectedModels[$Slot["Key"]])"
 }
+"  profiles: balanced (default), quality"
 ""
 "Restart OpenCode in the target project so it loads the new config."

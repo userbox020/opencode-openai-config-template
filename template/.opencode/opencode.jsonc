@@ -3,10 +3,11 @@
   "disabled_providers": [
     "chatgpt"
   ],
-  "model": "openai/gpt-5.6-sol",
+  "model": "openai/gpt-5.6-terra",
   "small_model": "openai/gpt-5.6-luna",
   "default_agent": "orchestrator",
   "plugin": [
+    "./routing-profile.js",
     "oh-my-opencode-slim@2.0.5"
   ],
   "skills": {
@@ -19,7 +20,7 @@
   ],
   "agent": {
     "build": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "openai/gpt-5.6-terra",
       "variant": "medium",
       "mode": "primary",
       "disable": false,
@@ -40,122 +41,17 @@
       "model": "openai/gpt-5.6-luna",
       "variant": "low"
     },
-    "explorer": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
-    },
-    "librarian": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
-    },
-    "oracle": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
-    },
-    "fixer": {
-      "permission": {
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny"
-      }
-    },
-    "designer": {
-      "permission": {
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny"
-      }
-    },
     "title": {
       "model": "openai/gpt-5.6-luna",
       "variant": "none"
     },
     "summary": {
-      "model": "openai/gpt-5.6-terra",
-      "variant": "medium"
+      "model": "openai/gpt-5.6-luna",
+      "variant": "low"
     },
     "compaction": {
       "model": "openai/gpt-5.6-terra",
       "variant": "medium"
-    },
-    "code-reviewer": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
-    },
-    "repo-architect": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
-    },
-    "test-writer": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
-    },
-    "security-reviewer": {
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "apply_patch": "deny",
-        "ast_grep_replace": "deny",
-        "bash": "deny",
-        "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
-      }
     }
   },
   "compaction": {
