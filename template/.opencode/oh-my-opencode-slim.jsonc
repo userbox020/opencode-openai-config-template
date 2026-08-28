@@ -1,17 +1,18 @@
 {
-  "$schema": "https://unpkg.com/oh-my-opencode-slim@2.0.5/oh-my-opencode-slim.schema.json",
+  "$schema": "https://unpkg.com/oh-my-opencode-slim@2.2.17/oh-my-opencode-slim.schema.json",
   "preset": "generic-openai",
   "autoUpdate": false,
   "fallback": {
     "enabled": true,
-    "timeoutMs": 30000,
-    "retryDelayMs": 500,
-    "retry_on_empty": true
+    "maxRetries": 3
   },
   "backgroundJobs": {
     "maxSessionsPerAgent": 3,
     "readContextMinLines": 10,
-    "readContextMaxFiles": 12
+    "readContextMaxFiles": 12,
+    "orchestratorWake": {
+      "enabled": false
+    }
   },
   "presets": {
     "generic-openai": {
@@ -88,7 +89,6 @@
         ],
         "skills": [],
         "mcps": [
-          "websearch",
           "context7",
           "gh_grep"
         ]
@@ -169,9 +169,6 @@
   },
   "council": {
     "default_preset": "generic-review-board",
-    "timeout": 300000,
-    "councillor_execution_mode": "parallel",
-    "councillor_retries": 1,
     "presets": {
       "generic-review-board": {
         "deep-review": {

@@ -34,7 +34,23 @@ $ModelSlots = @(
   }
 )
 
+$TemplateEntries = @(
+  "opencode.jsonc",
+  "oh-my-opencode-slim.jsonc",
+  "opencode.env",
+  "oh-my-opencode-slim",
+  "skills"
+)
+
 function Get-OpenCodeCommand {
+  if ($env:OPENCODE_BIN) {
+    $Command = Get-Command $env:OPENCODE_BIN -ErrorAction SilentlyContinue
+    if ($Command) {
+      return $Command.Source
+    }
+    return $null
+  }
+
   foreach ($Candidate in @("opencode.cmd", "opencode")) {
     $Command = Get-Command $Candidate -ErrorAction SilentlyContinue
     if ($Command) {
@@ -219,8 +235,6 @@ function Apply-ModelChoices {
   $SlimConfig.agents."security-reviewer".variant = "high"
 
   $CouncilPreset = $SlimConfig.council.presets."generic-review-board"
-  $SlimConfig.council.timeout = 300000
-  $SlimConfig.council.councillor_retries = 1
   $CouncilPreset."deep-review".model = $Deep
   $CouncilPreset."deep-review".variant = "high"
   $CouncilPreset."fast-sanity".model = $Utility
@@ -235,11 +249,22 @@ if (-not (Test-Path -LiteralPath $ProjectPath -PathType Container)) {
 }
 
 $RepoRoot = Resolve-Path -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath "..")
-$Source = Join-Path -Path $RepoRoot -ChildPath "template\.opencode"
+$Source = if ($env:OPENCODE_TEMPLATE_SOURCE) {
+  $env:OPENCODE_TEMPLATE_SOURCE
+} else {
+  Join-Path -Path $RepoRoot -ChildPath "template\.opencode"
+}
 $Destination = Join-Path -Path $ProjectPath -ChildPath ".opencode"
 
 if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
   throw "Template source not found: $Source"
+}
+
+foreach ($Entry in $TemplateEntries) {
+  $SourceEntry = Join-Path -Path $Source -ChildPath $Entry
+  if (-not (Test-Path -LiteralPath $SourceEntry)) {
+    throw "Required template entry not found: $SourceEntry"
+  }
 }
 
 if ((Test-Path -LiteralPath $Destination) -and -not $Force) {
@@ -281,7 +306,9 @@ try {
   $StagingRoot = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("opencode-openai-config-" + [guid]::NewGuid().ToString("N"))
   $StagedConfig = Join-Path -Path $StagingRoot -ChildPath ".opencode"
   New-Item -ItemType Directory -Path $StagedConfig | Out-Null
-  Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $StagedConfig -Recurse -Force
+  foreach ($Entry in $TemplateEntries) {
+    Copy-Item -LiteralPath (Join-Path -Path $Source -ChildPath $Entry) -Destination $StagedConfig -Recurse -Force
+  }
   Apply-ModelChoices -DestinationPath $StagedConfig -Models $SelectedModels
 
   if (-not $Force) {
@@ -306,4 +333,10 @@ foreach ($Slot in $ModelSlots) {
   "  $($Slot["Key"]): $($SelectedModels[$Slot["Key"]])"
 }
 ""
-"Restart OpenCode in the target project so it loads the new config."
+"Before starting OpenCode in the target project, enable required runtime features in the current PowerShell session:"
+'  $env:OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS = "true"'
+'  $env:OPENCODE_ENABLE_EXA = "1"'
+'  $env:OH_MY_OPENCODE_SLIM_PRESET = "generic-openai"'
+"  opencode"
+""
+"For persistent setup, add the two OPENCODE_* variables to your shell profile. Keep OH_MY_OPENCODE_SLIM_PRESET project-scoped so it does not override unrelated projects."

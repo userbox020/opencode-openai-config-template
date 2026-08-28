@@ -7,7 +7,7 @@
   "small_model": "openai/gpt-5.6-luna",
   "default_agent": "orchestrator",
   "plugin": [
-    "oh-my-opencode-slim@2.0.5"
+    "oh-my-opencode-slim@2.2.17"
   ],
   "skills": {
     "paths": [
@@ -23,22 +23,58 @@
       "variant": "medium",
       "mode": "primary",
       "disable": false,
-      "hidden": false
+      "hidden": false,
+      "permission": {
+        "task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny"
+      }
     },
     "plan": {
       "model": "openai/gpt-5.6-sol",
       "variant": "high",
       "mode": "primary",
       "disable": false,
-      "hidden": false
+      "hidden": false,
+      "permission": {
+        "task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny"
+      }
     },
     "general": {
       "model": "openai/gpt-5.6-terra",
-      "variant": "medium"
+      "variant": "medium",
+      "permission": {
+        "task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny"
+      }
     },
     "explore": {
       "model": "openai/gpt-5.6-luna",
-      "variant": "low"
+      "variant": "low",
+      "permission": {
+        "task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny"
+      }
     },
     "explorer": {
       "permission": {
@@ -48,8 +84,12 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
         "todowrite": "deny"
       }
     },
@@ -61,9 +101,14 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
-        "todowrite": "deny"
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
+        "todowrite": "deny",
+        "websearch": "allow"
       }
     },
     "oracle": {
@@ -74,23 +119,35 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
         "todowrite": "deny"
       }
     },
     "fixer": {
       "permission": {
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny"
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny"
       }
     },
     "designer": {
       "permission": {
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny"
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny"
       }
     },
     "title": {
@@ -113,8 +170,12 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
         "todowrite": "deny"
       }
     },
@@ -126,8 +187,12 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
         "todowrite": "deny"
       }
     },
@@ -139,8 +204,12 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
         "todowrite": "deny"
       }
     },
@@ -152,8 +221,12 @@
         "ast_grep_replace": "deny",
         "bash": "deny",
         "task": "deny",
-        "council_session": "deny",
-        "cancel_task": "deny",
+        "task_status": "deny",
+        "task_result": "deny",
+        "task_message": "deny",
+        "task_cancel": "deny",
+        "task_revive": "deny",
+        "wait_for_user": "deny",
         "todowrite": "deny"
       }
     }
@@ -164,9 +237,6 @@
   },
   "permission": {
     "read": {
-      "*": "allow"
-    },
-    "edit": {
       "*": "allow",
       ".env": "ask",
       ".env.*": "ask",
@@ -174,11 +244,132 @@
       "**/.env.*": "ask",
       ".env.example": "allow",
       "**/.env.example": "allow",
-
+      ".npmrc": "ask",
+      "**/.npmrc": "ask",
+      ".pypirc": "ask",
+      "**/.pypirc": "ask",
+      ".netrc": "ask",
+      "**/.netrc": "ask",
+      ".git-credentials": "ask",
+      "**/.git-credentials": "ask",
+      "credentials": "ask",
+      "**/credentials": "ask",
+      "secrets.*": "ask",
+      "**/secrets.*": "ask",
+      "*.key": "ask",
+      "**/*.key": "ask",
+      "*.pem": "ask",
+      "**/*.pem": "ask",
+      "*.p12": "ask",
+      "**/*.p12": "ask",
+      "*.pfx": "ask",
+      "**/*.pfx": "ask",
+      "id_rsa": "ask",
+      "**/id_rsa": "ask",
+      "id_ed25519": "ask",
+      "**/id_ed25519": "ask",
+      "*.token": "ask",
+      "**/*.token": "ask",
+      "*keypair*.json": "ask",
+      "**/*keypair*.json": "ask",
+      "*private-key*.json": "ask",
+      "**/*private-key*.json": "ask",
+      "rpc_endpoints.txt": "ask",
+      "**/rpc_endpoints.txt": "ask",
+      "graphql_endpoints.txt": "ask",
+      "**/graphql_endpoints.txt": "ask"
+    },
+    "edit": {
+      "*": "allow",
+      ".env": "deny",
+      ".env.*": "deny",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      ".env.example": "allow",
+      "**/.env.example": "allow",
+      ".npmrc": "deny",
+      "**/.npmrc": "deny",
+      ".pypirc": "deny",
+      "**/.pypirc": "deny",
+      ".netrc": "deny",
+      "**/.netrc": "deny",
+      ".git-credentials": "deny",
+      "**/.git-credentials": "deny",
+      "credentials": "deny",
+      "**/credentials": "deny",
+      "secrets.*": "deny",
+      "**/secrets.*": "deny",
+      "*.key": "deny",
+      "**/*.key": "deny",
+      "*.pem": "deny",
+      "**/*.pem": "deny",
+      "*.p12": "deny",
+      "**/*.p12": "deny",
+      "*.pfx": "deny",
+      "**/*.pfx": "deny",
+      "id_rsa": "deny",
+      "**/id_rsa": "deny",
+      "id_ed25519": "deny",
+      "**/id_ed25519": "deny",
+      "*.token": "deny",
+      "**/*.token": "deny",
+      "*keypair*.json": "deny",
+      "**/*keypair*.json": "deny",
+      "*private-key*.json": "deny",
+      "**/*private-key*.json": "deny",
+      "rpc_endpoints.txt": "deny",
+      "**/rpc_endpoints.txt": "deny",
+      "graphql_endpoints.txt": "deny",
+      "**/graphql_endpoints.txt": "deny"
     },
     "bash": {
-      "*": "allow"
+      "*": "ask",
+      "git push": "ask",
+      "git push *": "ask",
+      "git reset --hard": "ask",
+      "git reset --hard *": "ask",
+      "git clean *": "ask",
+      "git checkout -- *": "ask",
+      "git restore *": "ask",
+      "git branch -D *": "ask",
+      "rm -rf *": "ask",
+      "Remove-Item * -Recurse *": "ask",
+      "Remove-Item -Recurse *": "ask",
+      "rmdir /s *": "ask",
+      "del /s *": "ask",
+      "npm publish": "ask",
+      "npm publish *": "ask",
+      "pnpm publish": "ask",
+      "pnpm publish *": "ask",
+      "yarn npm publish *": "ask",
+      "bun publish *": "ask",
+      "cargo publish *": "ask",
+      "dotnet nuget push *": "ask",
+      "twine upload *": "ask",
+      "docker push *": "ask",
+      "docker system prune *": "ask",
+      "kubectl *": "ask",
+      "helm install *": "ask",
+      "helm upgrade *": "ask",
+      "terraform apply": "ask",
+      "terraform apply *": "ask",
+      "terraform destroy": "ask",
+      "terraform destroy *": "ask",
+      "pulumi up": "ask",
+      "pulumi up *": "ask",
+      "pulumi destroy": "ask",
+      "pulumi destroy *": "ask",
+      "vercel *--prod*": "ask",
+      "netlify deploy *--prod*": "ask",
+      "gh release create *": "ask",
+      "cast send *": "ask",
+      "cast publish *": "ask",
+      "cast wallet *": "ask",
+      "forge create *": "ask",
+      "forge script *--broadcast*": "ask",
+      "forge script * --broadcast *": "ask"
     },
+    "websearch": "deny",
     "external_directory": {
       "*": "ask"
     }

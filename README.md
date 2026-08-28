@@ -21,33 +21,53 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 - **Luna** (`openai/gpt-5.6-luna`) handles utility/high-volume work: exploration and fast sanity at low effort, and titles at none.
 - **Sol-Pro** (`openai/gpt-5.6-sol-pro`) is reserved for one bounded deep-review council member at high effort. It maps to `reasoning.mode=pro`.
 - Core routing uses Sol as the default model and Luna as the small model. Build is Sol medium; plan is Sol high; general is Terra medium; explore is Luna low; title is Luna none; and summary/compaction are Terra medium. Compaction retains 6 tail turns.
-- Equal-effort fallbacks accommodate Slim 2.0.5 behavior: orchestrator Sol medium → Terra medium; Oracle Sol xhigh → Terra xhigh; council Sol high → Terra high; explorer Luna low → Terra low; librarian Terra low → Luna low; fixer Sol high → Terra high; designer Terra medium → Sol medium.
-- Council configuration sets a 300-second timeout and requests one councillor retry. Deep review uses Sol-Pro high, fast sanity uses Luna low, and security sanity uses Terra high.
+- The orchestrator uses a goal-locked fast path: direct execution is the default, effort stays proportional to the request, optional findings do not become new objectives, and work stops after targeted verification establishes the requested result.
+- Equal-effort fallbacks use Slim 2.2.17 model chains: orchestrator Sol medium → Terra medium; Oracle Sol xhigh → Terra xhigh; council Sol high → Terra high; explorer Luna low → Terra low; librarian Terra low → Luna low; fixer Sol high → Terra high; designer Terra medium → Sol medium.
+- Council runs three dynamic councillor subagents in parallel. Deep review uses Sol-Pro high, fast sanity uses Luna low, and security sanity uses Terra high. Slim retries an empty councillor response once per model entry and handles council timing through its orchestrator prompt rather than obsolete timeout fields.
 - Generic specialists route code review to Terra high, architecture to Sol high, test strategy to Terra medium, and security review to Sol high.
 - These are template defaults. Customized installations substitute four model slots while retaining the documented effort variants and fallback order.
-- The orchestrator is the only normal lane allowed to delegate. Fixer and designer can edit but cannot spawn agents; explorer, librarian, Oracle, and the project review specialists are enforced read-only.
-- Librarian alone receives the bundled web search, Context7, and GitHub grep MCPs for external research. Other normal lanes do not receive those MCPs.
+- The orchestrator is the only normal lane allowed to delegate, but does so only for a missing specialist capability, materially useful parallelism, or justified high-risk review. Fixer and designer can edit but cannot spawn agents; explorer, librarian, Oracle, and the project review specialists are enforced read-only.
+- Librarian alone receives OpenCode's built-in web search plus the bundled Context7 and GitHub grep MCPs for external research. Other normal lanes are denied built-in web search and do not receive those MCPs.
+- Slim's periodic orchestrator wake is explicitly disabled to avoid unplanned idle model calls. Background tasks, completion injection, and reconciliation remain enabled.
 - Secret-like files are read-gated and edit-denied by default.
-- Risky shell operations such as `git push`, package publish, production deploy, `kubectl`, `terraform apply`, live transaction broadcasts, and destructive cleanup ask first.
+- Shell commands ask first by default, including `git push`, package publish, production deploy, `kubectl`, `terraform apply`, live transaction broadcasts, and destructive cleanup. Dedicated file tools remain available for normal repository inspection and edits.
 
-## Models, Effort, And Pricing
+## Models, Effort, Pricing, And Performance
 
-Base USD API pricing per 1M tokens as of 2026-07-14 is shown below. Check the [official OpenAI API pricing](https://openai.com/api/pricing/) for current rates.
+Standard short-context USD API pricing per 1M tokens as of 2026-08-27 is shown below. Check the [official OpenAI API pricing](https://developers.openai.com/api/docs/pricing) for current rates.
 
-| Model | Input | Cache read | Output |
+| Model | Input | Cache read | Cache write | Output |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $4.00 | $0.40 | $5.00 | $20.00 |
+| Terra | $2.00 | $0.20 | $2.50 | $12.00 |
+| Luna | $0.20 | $0.02 | $0.25 | $1.20 |
+
+All three models have a 1,050,000-token context window, a 922,000-token maximum input, and a 128,000-token provider output limit. Requests above 272,000 input tokens are billed at the following rates for the full request:
+
+| Model | Input | Cache read | Cache write | Output |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $8.00 | $0.80 | $10.00 | $30.00 |
+| Terra | $4.00 | $0.40 | $5.00 | $18.00 |
+| Luna | $0.40 | $0.04 | $0.50 | $1.80 |
+
+GPT-5.6 cache writes cost 1.25x uncached input and cache reads cost 0.1x. Sol's current Standard pricing is promotional through at least 2026-11-21 and should be reviewed again near that date.
+
+OpenAI's published coding results support the current tiering. These are general benchmarks, not evaluations of this template's exact prompts or workloads:
+
+| Published evaluation | Sol | Terra | Luna |
 | --- | ---: | ---: | ---: |
-| Sol | $5.00 | $0.50 | $30.00 |
-| Terra | $2.50 | $0.25 | $15.00 |
-| Luna | $1.00 | $0.10 | $6.00 |
+| Artificial Analysis Coding Agent Index v1.1 | 80.0 | 77.4 | 74.6 |
+| SWE-Bench Pro | 64.6% | 63.4% | 62.7% |
+| Terminal-Bench 2.1 | 88.8% | 87.4% | 84.7% |
 
-Sol, Terra, and Luna all have about 1.05M tokens of context and a 128K maximum output. Higher-context rates apply above 272K input tokens. Sol-Pro pricing is not listed here; check current official pricing before running deep-review work.
+OpenCode 1.18.23 exposes GPT-5.6 effort variants `none`, `low`, `medium`, `high`, and `xhigh`. The OpenAI API also supports `max`, but OpenCode 1.18.23 does not expose it for GPT-5.6, so the template continues to use xhigh for its strongest normal route. OpenCode also defaults requests to 32,000 output tokens even though the provider supports 128,000. Set `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=128000` before launch only when a workload genuinely needs larger single responses; the lower default limits latency and runaway output cost.
 
-OpenCode 1.17.12 effectively supports GPT-5.6 effort variants `none`, `low`, `medium`, `high`, and `xhigh`. The default template intentionally never configures `max`: OpenCode stores that value but does not map it to an OpenAI request option, so the defaults use xhigh instead. `-fast` models request the priority service tier; they do not guarantee lower latency or higher quality and are intentionally excluded from the default active routing. Sol-Pro is used only for bounded deep review rather than routine work.
+Generated `-fast` aliases request Fast mode, which costs 2x the Standard GPT-5.6 rates and can deliver up to 2.5x faster service. They remain excluded from default routing. `openai/gpt-5.6-sol-pro` is a generated Sol mode alias that sends `reasoning.mode=pro`, not a separate base model. Pro mode uses Sol's per-token rates but performs more aggregate model work, increasing billed tokens and latency, so it remains bounded to deep review.
 
 ## Requirements
 
-- OpenCode installed and available as `opencode` or `opencode.cmd`. This template is tested with OpenCode 1.17.12.
-- The `oh-my-opencode-slim` OpenCode plugin, pinned by this template to tested version 2.0.5 for both runtime loading and the editor schema.
+- OpenCode installed and available as `opencode` or `opencode.cmd`. This template is tested with OpenCode 1.18.23.
+- The `oh-my-opencode-slim` OpenCode plugin, pinned by this template to tested version 2.2.17 for both runtime loading and the editor schema.
 - OpenAI credentials for the configured `openai/...` model IDs.
 - The macOS/Linux installer requires Node.js or Python 3 and verifies the runtime before copying or overwriting destination files.
 
@@ -55,6 +75,51 @@ The installer queries `opencode models openai` for interactive customization. Ca
 
 - `template/.opencode/opencode.jsonc`
 - `template/.opencode/oh-my-opencode-slim.jsonc`
+
+## Required Runtime Environment
+
+Launch OpenCode for this project with the two required feature flags and the project-scoped preset override:
+
+```text
+OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
+OPENCODE_ENABLE_EXA=1
+OH_MY_OPENCODE_SLIM_PRESET=generic-openai
+```
+
+The preset variable prevents a user-level `OH_MY_OPENCODE_SLIM_PRESET` from overriding this project's custom `generic-openai` routing. The installed `.opencode/opencode.env` records the values but OpenCode does not load that file automatically. Use the one-shot launch commands below; only the two feature flags are suitable for cross-project shell profiles.
+
+PowerShell one-shot launch:
+
+```powershell
+$env:OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS = "true"
+$env:OPENCODE_ENABLE_EXA = "1"
+$env:OH_MY_OPENCODE_SLIM_PRESET = "generic-openai"
+opencode
+```
+
+PowerShell persistent user environment for the two cross-project feature flags:
+
+```powershell
+[Environment]::SetEnvironmentVariable("OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS", "true", "User")
+[Environment]::SetEnvironmentVariable("OPENCODE_ENABLE_EXA", "1", "User")
+```
+
+Open a new terminal after setting persistent variables. Keep `OH_MY_OPENCODE_SLIM_PRESET=generic-openai` in this project's one-shot launch command or a project-specific wrapper; setting it globally would override Slim routing in unrelated projects.
+
+macOS/Linux one-shot launch:
+
+```bash
+OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true OPENCODE_ENABLE_EXA=1 OH_MY_OPENCODE_SLIM_PRESET=generic-openai opencode
+```
+
+For persistent setup, add the two feature flags to the startup file for your shell and open a new terminal:
+
+```bash
+export OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true
+export OPENCODE_ENABLE_EXA=1
+```
+
+Keep `OH_MY_OPENCODE_SLIM_PRESET=generic-openai` project-scoped in the one-shot command or a project-specific wrapper.
 
 ## Install Into A Project
 
@@ -86,7 +151,7 @@ macOS/Linux force mode:
 FORCE=1 bash ./scripts/install.sh /path/to/your-project
 ```
 
-Both installers finish prompting and generate the customized configuration in a temporary staging directory before creating or changing the target `.opencode`. Staging is cleaned on success or error. Force mode then merges and overwrites matching template files; it does not delete extra files in the target `.opencode` directory.
+Both installers finish prompting and generate the customized configuration in a temporary staging directory before creating or changing the target `.opencode`. They copy a fixed allowlist of template files and directories, excluding OpenCode-generated `node_modules`, package manifests, lockfiles, and local `.gitignore` state. The shipped JSONC files intentionally remain valid strict JSON so PowerShell, Node.js, and Python can customize them without an extra parser dependency. Staging is cleaned on success or error. Force mode then merges and overwrites matching template files; it does not delete extra files in the target `.opencode` directory.
 
 ## Interactive Model Routing
 
@@ -109,9 +174,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -ProjectPath C:\p
 bash ./scripts/install.sh /path/to/your-project --non-interactive
 ```
 
-You can set `OPENCODE_BIN` for the Unix installer if your OpenCode binary has a custom name. Both installers always query `opencode models openai`; provider customization is not supported.
+You can set `OPENCODE_BIN` for either installer if your OpenCode binary has a custom name. Both installers query that binary for `models openai`; provider customization is not supported.
 
 ## Validate After Install
+
+Run the repository's dependency-free config and native-installer checks first:
+
+```bash
+node ./scripts/test.mjs
+```
 
 Run these from the target project:
 
@@ -119,9 +190,10 @@ Run these from the target project:
 opencode debug config
 opencode debug agent orchestrator
 opencode debug skill
+npx --yes oh-my-opencode-slim@2.2.17 doctor
 ```
 
-Run a live model smoke test if desired:
+Run a paid live model smoke test if desired:
 
 ```bash
 opencode run --agent build -m openai/gpt-5.6-sol "Respond with exactly: ROUTING_OK_SOL"
@@ -130,7 +202,7 @@ opencode run --agent build -m openai/gpt-5.6-luna "Respond with exactly: ROUTING
 opencode run --agent build -m openai/gpt-5.6-sol-pro "Respond with exactly: ROUTING_OK_SOL_PRO"
 ```
 
-Restart any already-running OpenCode session after copying or editing config files. OpenCode loads config at startup.
+Launch with the required environment variables and restart any already-running OpenCode session after copying or editing config files. OpenCode loads config at startup.
 
 ## Included Agents
 
@@ -148,7 +220,7 @@ Restart any already-running OpenCode session after copying or editing config fil
 
 ## Safety Rules
 
-The template defaults to normal coding productivity while protecting common dangerous surfaces:
+The template defaults to dedicated file tools for normal coding work and asks before shell execution to protect common dangerous surfaces:
 
 - Do not read or summarize secrets unless explicitly authorized in the current turn.
 - Do not edit secret-bearing files.

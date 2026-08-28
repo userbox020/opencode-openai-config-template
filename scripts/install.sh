@@ -37,7 +37,7 @@ done
 PROJECT_PATH="${PROJECT_PATH:-$PWD}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SOURCE_DIR="$REPO_ROOT/template/.opencode"
+SOURCE_DIR="${OPENCODE_TEMPLATE_SOURCE:-$REPO_ROOT/template/.opencode}"
 DEST_DIR="$PROJECT_PATH/.opencode"
 STAGING_DIR=""
 STAGED_CONFIG_DIR=""
@@ -75,6 +75,13 @@ MODEL_DEFAULTS=(
   "openai/gpt-5.6-terra"
   "openai/gpt-5.6-luna"
   "openai/gpt-5.6-sol-pro"
+)
+TEMPLATE_ENTRIES=(
+  "opencode.jsonc"
+  "oh-my-opencode-slim.jsonc"
+  "opencode.env"
+  "oh-my-opencode-slim"
+  "skills"
 )
 
 JSON_RUNTIME=""
@@ -253,8 +260,6 @@ slim.agents['test-writer'].variant = 'medium';
 slim.agents['security-reviewer'].model = primary;
 slim.agents['security-reviewer'].variant = 'high';
 const councilPreset = slim.council.presets['generic-review-board'];
-slim.council.timeout = 300000;
-slim.council.councillor_retries = 1;
 councilPreset['deep-review'].model = deep;
 councilPreset['deep-review'].variant = 'high';
 councilPreset['fast-sanity'].model = utility;
@@ -336,8 +341,6 @@ slim["agents"]["repo-architect"].update(model=primary, variant="high")
 slim["agents"]["test-writer"].update(model=balanced, variant="medium")
 slim["agents"]["security-reviewer"].update(model=primary, variant="high")
 council_preset = slim["council"]["presets"]["generic-review-board"]
-slim["council"]["timeout"] = 300000
-slim["council"]["councillor_retries"] = 1
 council_preset["deep-review"].update(model=deep, variant="high")
 council_preset["fast-sanity"].update(model=utility, variant="low")
 council_preset["security-sanity"].update(model=balanced, variant="high")
@@ -359,6 +362,13 @@ if [[ ! -d "$SOURCE_DIR" ]]; then
   echo "Template source not found: $SOURCE_DIR" >&2
   exit 1
 fi
+
+for entry in "${TEMPLATE_ENTRIES[@]}"; do
+  if [[ ! -e "$SOURCE_DIR/$entry" ]]; then
+    echo "Required template entry not found: $SOURCE_DIR/$entry" >&2
+    exit 1
+  fi
+done
 
 if [[ -e "$DEST_DIR" && "$FORCE" != "1" ]]; then
   echo "Target already has .opencode. Re-run with FORCE=1 to merge and overwrite matching template files." >&2
@@ -404,7 +414,9 @@ DEEP_MODEL="${SELECTED_MODELS[3]}"
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/opencode-openai-config.XXXXXX")"
 STAGED_CONFIG_DIR="$STAGING_DIR/.opencode"
 mkdir -p "$STAGED_CONFIG_DIR"
-cp -R "$SOURCE_DIR"/. "$STAGED_CONFIG_DIR"/
+for entry in "${TEMPLATE_ENTRIES[@]}"; do
+  cp -R "$SOURCE_DIR/$entry" "$STAGED_CONFIG_DIR"/
+done
 apply_model_choices
 
 if [[ "$FORCE" != "1" ]]; then
@@ -430,4 +442,7 @@ for index in "${!MODEL_KEYS[@]}"; do
   echo "  ${MODEL_KEYS[$index]}: ${SELECTED_MODELS[$index]}"
 done
 echo ""
-echo "Restart OpenCode in the target project so it loads the new config."
+echo "Start OpenCode with the required runtime features enabled:"
+echo "  OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true OPENCODE_ENABLE_EXA=1 OH_MY_OPENCODE_SLIM_PRESET=generic-openai opencode"
+echo ""
+echo "For persistent setup, export the two OPENCODE_* variables from your shell profile. Keep OH_MY_OPENCODE_SLIM_PRESET project-scoped so it does not override unrelated projects."
