@@ -21,7 +21,7 @@ Use this skill to complete the user's stated goal without turning it into a broa
 - Infer project tooling and conventions from nearby code and manifests as needed; do not inventory the entire repository first.
 - Check whether the worktree already has user changes before editing files that may overlap.
 - Avoid reading secret-bearing files unless the user explicitly authorizes that exact action.
-- Start implementation once the direct path is clear. Do not write a plan or task list for straightforward work.
+- Route non-trivial work once the dependency path is clear. Do not write a formal plan or task list for one isolated action.
 
 ## Editing Discipline
 
@@ -45,14 +45,21 @@ Use the cheapest decisive evidence from the repository's existing tooling:
 
 ## Delegation
 
-Direct execution is the default. Use a focused agent only when it clearly saves time, supplies a missing capability, or reduces meaningful risk:
+Direct execution is reserved for one isolated, clear, low-risk action where delegation would cost more than execution. For non-trivial work, keep the orchestrator focused on routing, reconciliation, and final verification:
 
+- `@explorer` for read-only repository discovery and code-path mapping.
+- `@librarian` for external documentation, current APIs, and source research.
+- `@fixer` for bounded headless implementation with clear ownership.
+- `@designer` for user-visible UI/UX design and implementation.
+- `@observer` for read-only visual and document analysis.
+- `@oracle` for architecture, persistent debugging, and high-risk reasoning.
+- `@council` only when diverse model judgment is worth the extra cost.
 - `@code-reviewer` for correctness, regressions, edge cases, and maintainability.
 - `@repo-architect` for design tradeoffs, migrations, module boundaries, and rollout plans.
 - `@test-writer` for reproduction, fixtures, and meaningful coverage.
 - `@security-reviewer` for defensive auth, secret handling, injection, unsafe IO, dependencies, and deployment risks.
 
-Do not delegate routine discovery, implementation, testing, or review that can be completed directly. Never use a specialist response to expand scope. When review is justified, send a compact handoff with the primary goal, exact concern, relevant files, and verification already run.
+Give each writer a non-overlapping ownership boundary and each task a validation owner. Never use a specialist response to expand scope. When review is justified, send a compact handoff with the primary goal, exact concern, relevant files, and verification already run.
 
 ## Safety
 

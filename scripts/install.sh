@@ -62,19 +62,19 @@ MODEL_TITLES=(
   "Primary Sol"
   "Balanced Terra"
   "Utility Luna"
-  "Deep Sol-Pro"
+  "Deep Review"
 )
 MODEL_DESCRIPTIONS=(
-  "Routine orchestration and build, plus high-effort planning, fixing, security, and architecture."
-  "General work, source synthesis, summaries, compaction, design, and normal review."
-  "Exploration, titles, high-volume utility work, and fast sanity checks."
-  "Bounded deep-review council work only."
+  "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle fallback."
+  "High-effort orchestration plus general work, source synthesis, summaries, compaction, design, and normal review."
+  "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks."
+  "Max-effort bounded deep-review council work only."
 )
 MODEL_DEFAULTS=(
   "openai/gpt-5.6-sol"
   "openai/gpt-5.6-terra"
   "openai/gpt-5.6-luna"
-  "openai/gpt-5.6-sol-pro"
+  "openai/gpt-5.6-sol"
 )
 TEMPLATE_ENTRIES=(
   "opencode.jsonc"
@@ -197,7 +197,7 @@ function writeJson(path, value) {
 }
 
 const opencode = readJson(opencodePath);
-opencode.model = primary;
+opencode.model = balanced;
 opencode.small_model = utility;
 opencode.agent.build.model = primary;
 opencode.agent.build.variant = 'medium';
@@ -224,12 +224,12 @@ writeJson(opencodePath, opencode);
 const slim = readJson(slimPath);
 const preset = slim.presets['generic-openai'];
 preset.orchestrator.model = [
-  { id: primary, variant: 'medium' },
-  { id: balanced, variant: 'medium' },
+  { id: balanced, variant: 'high' },
+  { id: primary, variant: 'high' },
 ];
 preset.oracle.model = [
-  { id: primary, variant: 'xhigh' },
-  { id: balanced, variant: 'xhigh' },
+  { id: primary, variant: 'max' },
+  { id: balanced, variant: 'max' },
 ];
 preset.council.model = [
   { id: primary, variant: 'high' },
@@ -240,16 +240,20 @@ preset.explorer.model = [
   { id: balanced, variant: 'low' },
 ];
 preset.librarian.model = [
-  { id: balanced, variant: 'low' },
   { id: utility, variant: 'low' },
+  { id: balanced, variant: 'low' },
 ];
 preset.fixer.model = [
-  { id: primary, variant: 'high' },
+  { id: utility, variant: 'high' },
   { id: balanced, variant: 'high' },
 ];
 preset.designer.model = [
   { id: balanced, variant: 'medium' },
   { id: primary, variant: 'medium' },
+];
+preset.observer.model = [
+  { id: utility, variant: 'medium' },
+  { id: balanced, variant: 'medium' },
 ];
 slim.agents['code-reviewer'].model = balanced;
 slim.agents['code-reviewer'].variant = 'high';
@@ -261,7 +265,7 @@ slim.agents['security-reviewer'].model = primary;
 slim.agents['security-reviewer'].variant = 'high';
 const councilPreset = slim.council.presets['generic-review-board'];
 councilPreset['deep-review'].model = deep;
-councilPreset['deep-review'].variant = 'high';
+councilPreset['deep-review'].variant = 'max';
 councilPreset['fast-sanity'].model = utility;
 councilPreset['fast-sanity'].variant = 'low';
 councilPreset['security-sanity'].model = balanced;
@@ -295,7 +299,7 @@ def write_json(path, value):
         handle.write("\n")
 
 opencode = read_json(opencode_path)
-opencode["model"] = primary
+opencode["model"] = balanced
 opencode["small_model"] = utility
 opencode["agent"]["build"].update(model=primary, variant="medium", mode="primary", disable=False, hidden=False)
 opencode["agent"]["plan"].update(model=primary, variant="high", mode="primary", disable=False, hidden=False)
@@ -309,12 +313,12 @@ write_json(opencode_path, opencode)
 slim = read_json(slim_path)
 preset = slim["presets"]["generic-openai"]
 preset["orchestrator"]["model"] = [
-    {"id": primary, "variant": "medium"},
-    {"id": balanced, "variant": "medium"},
+    {"id": balanced, "variant": "high"},
+    {"id": primary, "variant": "high"},
 ]
 preset["oracle"]["model"] = [
-    {"id": primary, "variant": "xhigh"},
-    {"id": balanced, "variant": "xhigh"},
+    {"id": primary, "variant": "max"},
+    {"id": balanced, "variant": "max"},
 ]
 preset["council"]["model"] = [
     {"id": primary, "variant": "high"},
@@ -325,23 +329,27 @@ preset["explorer"]["model"] = [
     {"id": balanced, "variant": "low"},
 ]
 preset["librarian"]["model"] = [
-    {"id": balanced, "variant": "low"},
     {"id": utility, "variant": "low"},
+    {"id": balanced, "variant": "low"},
 ]
 preset["fixer"]["model"] = [
-    {"id": primary, "variant": "high"},
+    {"id": utility, "variant": "high"},
     {"id": balanced, "variant": "high"},
 ]
 preset["designer"]["model"] = [
     {"id": balanced, "variant": "medium"},
     {"id": primary, "variant": "medium"},
 ]
+preset["observer"]["model"] = [
+    {"id": utility, "variant": "medium"},
+    {"id": balanced, "variant": "medium"},
+]
 slim["agents"]["code-reviewer"].update(model=balanced, variant="high")
 slim["agents"]["repo-architect"].update(model=primary, variant="high")
 slim["agents"]["test-writer"].update(model=balanced, variant="medium")
 slim["agents"]["security-reviewer"].update(model=primary, variant="high")
 council_preset = slim["council"]["presets"]["generic-review-board"]
-council_preset["deep-review"].update(model=deep, variant="high")
+council_preset["deep-review"].update(model=deep, variant="max")
 council_preset["fast-sanity"].update(model=utility, variant="low")
 council_preset["security-sanity"].update(model=balanced, variant="high")
 write_json(slim_path, slim)

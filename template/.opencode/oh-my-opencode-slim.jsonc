@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/oh-my-opencode-slim@2.2.17/oh-my-opencode-slim.schema.json",
   "preset": "generic-openai",
   "autoUpdate": false,
+  "disabled_agents": [],
+  "image_routing": "auto",
   "fallback": {
     "enabled": true,
     "maxRetries": 3
@@ -19,12 +21,12 @@
       "orchestrator": {
         "model": [
           {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "medium"
+            "id": "openai/gpt-5.6-terra",
+            "variant": "high"
           },
           {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "medium"
+            "id": "openai/gpt-5.6-sol",
+            "variant": "high"
           }
         ],
         "skills": [
@@ -36,11 +38,11 @@
         "model": [
           {
             "id": "openai/gpt-5.6-sol",
-            "variant": "xhigh"
+            "variant": "max"
           },
           {
             "id": "openai/gpt-5.6-terra",
-            "variant": "xhigh"
+            "variant": "max"
           }
         ],
         "skills": [],
@@ -79,11 +81,11 @@
       "librarian": {
         "model": [
           {
-            "id": "openai/gpt-5.6-terra",
+            "id": "openai/gpt-5.6-luna",
             "variant": "low"
           },
           {
-            "id": "openai/gpt-5.6-luna",
+            "id": "openai/gpt-5.6-terra",
             "variant": "low"
           }
         ],
@@ -96,7 +98,7 @@
       "fixer": {
         "model": [
           {
-            "id": "openai/gpt-5.6-sol",
+            "id": "openai/gpt-5.6-luna",
             "variant": "high"
           },
           {
@@ -117,6 +119,20 @@
           },
           {
             "id": "openai/gpt-5.6-sol",
+            "variant": "medium"
+          }
+        ],
+        "skills": [],
+        "mcps": []
+      },
+      "observer": {
+        "model": [
+          {
+            "id": "openai/gpt-5.6-luna",
+            "variant": "medium"
+          },
+          {
+            "id": "openai/gpt-5.6-terra",
             "variant": "medium"
           }
         ],
@@ -172,8 +188,8 @@
     "presets": {
       "generic-review-board": {
         "deep-review": {
-          "model": "openai/gpt-5.6-sol-pro",
-          "variant": "high",
+          "model": "openai/gpt-5.6-sol",
+          "variant": "max",
           "prompt": "Review the proposed change for correctness, maintainability, regression risk, test adequacy, and operational safety. Keep findings concrete and scoped."
         },
         "fast-sanity": {

@@ -41,8 +41,9 @@ function assertTemplate(configDir, models) {
 
   assert.equal(opencode.$schema, 'https://opencode.ai/config.json');
   assert.deepEqual(opencode.plugin, ['oh-my-opencode-slim@2.2.17']);
-  assert.equal(opencode.model, models.primary);
+  assert.equal(opencode.model, models.balanced);
   assert.equal(opencode.small_model, models.utility);
+  assert.equal(opencode.subagent_depth, 1);
   assert.equal(opencode.agent.build.model, models.primary);
   assert.equal(opencode.agent.general.model, models.balanced);
   assert.equal(opencode.agent.explore.model, models.utility);
@@ -50,13 +51,13 @@ function assertTemplate(configDir, models) {
   assert.equal(opencode.agent.librarian.permission.websearch, 'allow');
   assert.equal(opencode.permission.read['**/.env'], 'ask');
   assert.equal(opencode.permission.edit['**/.env'], 'deny');
+  assert.equal(opencode.permission.edit['*'], undefined);
   assert.equal(opencode.permission.bash['*'], 'ask');
   assert.equal(opencode.permission.bash['git push *'], 'ask');
   assert.equal(opencode.permission.bash['terraform apply *'], 'ask');
 
   const nonDelegatingAgents = [
     'build',
-    'plan',
     'general',
     'explore',
     'explorer',
@@ -64,6 +65,7 @@ function assertTemplate(configDir, models) {
     'oracle',
     'fixer',
     'designer',
+    'observer',
     'code-reviewer',
     'repo-architect',
     'test-writer',
@@ -87,32 +89,65 @@ function assertTemplate(configDir, models) {
       );
     }
   }
+  assert.deepEqual(opencode.agent.plan.permission.task, {
+    '*': 'deny',
+    explorer: 'allow',
+    librarian: 'allow',
+  });
+  assert.deepEqual(opencode.agent.plan.permission.edit, {
+    '.env.example': 'deny',
+    '**/.env.example': 'deny',
+  });
+  for (const toolName of ['write', 'ast_grep_replace']) {
+    assert.equal(
+      opencode.agent.plan.permission[toolName],
+      'deny',
+      `plan must deny ${toolName}`,
+    );
+  }
+  for (const toolName of taskControls.slice(1)) {
+    assert.equal(
+      opencode.agent.plan.permission[toolName],
+      'deny',
+      `plan must deny ${toolName}`,
+    );
+  }
 
   assert.equal(
     slim.$schema,
     'https://unpkg.com/oh-my-opencode-slim@2.2.17/oh-my-opencode-slim.schema.json',
   );
   assert.equal(slim.preset, 'generic-openai');
+  assert.deepEqual(slim.disabled_agents, []);
+  assert.equal(slim.image_routing, 'auto');
   assert.deepEqual(slim.fallback, { enabled: true, maxRetries: 3 });
   assert.equal(slim.backgroundJobs.orchestratorWake.enabled, false);
   assert.equal('timeout' in slim.council, false);
   assert.equal('councillor_retries' in slim.council, false);
   assert.deepEqual(preset.librarian.mcps, ['context7', 'gh_grep']);
-  assertModelEntry(preset.orchestrator.model[0], models.primary, 'medium');
-  assertModelEntry(preset.orchestrator.model[1], models.balanced, 'medium');
+  assertModelEntry(preset.orchestrator.model[0], models.balanced, 'high');
+  assertModelEntry(preset.orchestrator.model[1], models.primary, 'high');
+  assertModelEntry(preset.oracle.model[0], models.primary, 'max');
+  assertModelEntry(preset.oracle.model[1], models.balanced, 'max');
   assertModelEntry(preset.explorer.model[0], models.utility, 'low');
+  assertModelEntry(preset.librarian.model[0], models.utility, 'low');
+  assertModelEntry(preset.fixer.model[0], models.utility, 'high');
+  assertModelEntry(preset.designer.model[0], models.balanced, 'medium');
+  assertModelEntry(preset.observer.model[0], models.utility, 'medium');
   assert.equal(slim.agents['code-reviewer'].model, models.balanced);
   assert.equal(slim.agents['repo-architect'].model, models.primary);
   assert.equal(council['deep-review'].model, models.deep);
+  assert.equal(council['deep-review'].variant, 'max');
   assert.equal(council['fast-sanity'].model, models.utility);
   assert.equal(council['security-sanity'].model, models.balanced);
 
   const promptDir = join(configDir, 'oh-my-opencode-slim');
-  const orchestratorPrompt = readFileSync(join(promptDir, 'orchestrator.md'), 'utf8');
+  const orchestratorAppend = readFileSync(join(promptDir, 'orchestrator_append.md'), 'utf8');
   const projectInstructions = readFileSync(join(promptDir, 'project-instructions.md'), 'utf8');
-  assert.equal(orchestratorPrompt.includes('## Goal Lock'), true);
-  assert.equal(orchestratorPrompt.includes('Do not delegate by default'), true);
-  assert.equal(orchestratorPrompt.includes('Stop when the requested result is implemented'), true);
+  assert.equal(existsSync(join(promptDir, 'orchestrator.md')), false);
+  assert.equal(orchestratorAppend.includes('remain the coordinator'), true);
+  assert.equal(orchestratorAppend.includes("OpenCode's native Plan agent"), true);
+  assert.equal(orchestratorAppend.includes('Stop once the requested outcome is complete'), true);
   assert.equal(projectInstructions.includes('Do not replace it with broader engineering goals'), true);
 }
 
@@ -182,7 +217,7 @@ const defaultModels = {
   primary: 'openai/gpt-5.6-sol',
   balanced: 'openai/gpt-5.6-terra',
   utility: 'openai/gpt-5.6-luna',
-  deep: 'openai/gpt-5.6-sol-pro',
+  deep: 'openai/gpt-5.6-sol',
 };
 const customModels = {
   primary: 'openai/test-primary',
@@ -203,8 +238,9 @@ assert.equal(envLines.has('OPENCODE_ENABLE_EXA=1'), true);
 assert.equal(envLines.has('OH_MY_OPENCODE_SLIM_PRESET=generic-openai'), true);
 
 const readme = readFileSync(join(repoRoot, 'README.md'), 'utf8');
-assert.equal(readme.includes('OpenCode 1.18.23'), true);
-assert.equal(readme.includes('Slim 2.2.17'), true);
+assert.equal(readme.includes('OpenCode 1.18.26'), true);
+assert.equal(readme.includes('OMOS 2.2.17'), true);
+assert.equal(readme.includes('gpt-5.6-sol-pro'), false);
 assert.equal(readme.includes('2.0.5'), false);
 assert.equal(readme.includes('1.17.12'), false);
 

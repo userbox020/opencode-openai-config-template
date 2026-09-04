@@ -11,14 +11,15 @@ This workspace is for authorized software engineering on the current project.
 - Treat adjacent findings as optional unless they block correctness or present an immediate serious safety risk. Finish the requested goal before reporting them briefly.
 - Do not read, print, summarize, or persist secrets from `.env`, `.env.*`, credential files, key files, PEM files, token files, or endpoint lists unless the user explicitly authorizes that exact action in the current turn.
 - Do not publish packages, push branches, deploy infrastructure, touch production systems, broadcast transactions, or run destructive cleanup without explicit current-turn authorization.
-- Use direct execution by default. Do not plan, delegate, or create a task list merely because work has multiple steps or touches multiple files.
+- For non-trivial work, keep the orchestrator focused on dependency routing, specialist ownership, reconciliation, and final verification. Work directly only on one isolated, clear, low-risk action where delegation would cost more than execution.
+- Use OpenCode's native Plan agent when the user wants a permission-enforced planning-only phase. Planning-only work must not dispatch write-capable agents.
 - Verify with the smallest existing check that can establish the requested behavior, then stop.
 - Use specialist agents only when their distinct capability, safe parallelism, or independent judgment materially improves delivery. Routine work does not need second-pass review.
 - Keep delegation in the orchestrator lane. Explorer, librarian, Oracle, and project review specialists are read-only; fixer and designer may implement but must not spawn agents.
 - Use `@librarian` for external documentation and source research. Never include secrets or private code in remote search queries.
 - Keep security work defensive and scoped to repositories, systems, and targets the user is authorized to review.
 - If a request cannot be handled safely, reframe it into defensive validation, remediation, test design, or documentation.
-- Use the configured primary route at medium effort for routine orchestration and build; use it at high effort for planning, fixing, security review, and architecture; reserve its xhigh route for Oracle escalation.
-- Use the configured balanced route for general work, source synthesis, technical summaries, compaction, design, and normal review.
-- Use the configured utility route at none or low effort for exploration, titles, utility/high-volume tasks, and fast sanity checks.
-- Use the configured deep-review route at high effort only for bounded deep council review.
+- Use the configured balanced route at high effort for orchestration, and at medium effort for general work, summaries, compaction, design, and normal review.
+- Use the configured primary route at medium effort for direct build work, at high effort for planning, architecture, security, and council synthesis, and at max effort only for rare Oracle or deep-council reasoning.
+- Use the configured utility route at none or low effort for titles, exploration, research, and fast sanity; at medium effort for visual analysis; and at high effort for bounded implementation.
+- Keep Fast aliases opt-in for latency-sensitive foreground work rather than default background routing.

@@ -11,26 +11,26 @@ $ModelSlots = @(
   [ordered]@{
     Key = "primary"
     Title = "Primary Sol"
-    Description = "Routine orchestration and build, plus high-effort planning, fixing, security, and architecture."
+    Description = "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle fallback."
     Default = "openai/gpt-5.6-sol"
   },
   [ordered]@{
     Key = "balanced"
     Title = "Balanced Terra"
-    Description = "General work, source synthesis, summaries, compaction, design, and normal review."
+    Description = "High-effort orchestration plus general work, source synthesis, summaries, compaction, design, and normal review."
     Default = "openai/gpt-5.6-terra"
   },
   [ordered]@{
     Key = "utility"
     Title = "Utility Luna"
-    Description = "Exploration, titles, high-volume utility work, and fast sanity checks."
+    Description = "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks."
     Default = "openai/gpt-5.6-luna"
   },
   [ordered]@{
     Key = "deep"
-    Title = "Deep Sol-Pro"
-    Description = "Bounded deep-review council work only."
-    Default = "openai/gpt-5.6-sol-pro"
+    Title = "Deep Review"
+    Description = "Max-effort bounded deep-review council work only."
+    Default = "openai/gpt-5.6-sol"
   }
 )
 
@@ -170,7 +170,7 @@ function Apply-ModelChoices {
   $Utility = $Models["utility"]
   $Deep = $Models["deep"]
 
-  $OpenCodeConfig.model = $Primary
+  $OpenCodeConfig.model = $Balanced
   $OpenCodeConfig.small_model = $Utility
   $OpenCodeConfig.agent.build.model = $Primary
   $OpenCodeConfig.agent.build.variant = "medium"
@@ -197,12 +197,12 @@ function Apply-ModelChoices {
   $SlimConfig = Get-Content -LiteralPath $SlimConfigPath -Raw | ConvertFrom-Json
   $Preset = $SlimConfig.presets."generic-openai"
   $Preset.orchestrator.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "medium" },
-    [pscustomobject]@{ id = $Balanced; variant = "medium" }
+    [pscustomobject]@{ id = $Balanced; variant = "high" },
+    [pscustomobject]@{ id = $Primary; variant = "high" }
   )
   $Preset.oracle.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "xhigh" },
-    [pscustomobject]@{ id = $Balanced; variant = "xhigh" }
+    [pscustomobject]@{ id = $Primary; variant = "max" },
+    [pscustomobject]@{ id = $Balanced; variant = "max" }
   )
   $Preset.council.model = @(
     [pscustomobject]@{ id = $Primary; variant = "high" },
@@ -213,16 +213,20 @@ function Apply-ModelChoices {
     [pscustomobject]@{ id = $Balanced; variant = "low" }
   )
   $Preset.librarian.model = @(
-    [pscustomobject]@{ id = $Balanced; variant = "low" },
-    [pscustomobject]@{ id = $Utility; variant = "low" }
+    [pscustomobject]@{ id = $Utility; variant = "low" },
+    [pscustomobject]@{ id = $Balanced; variant = "low" }
   )
   $Preset.fixer.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "high" },
+    [pscustomobject]@{ id = $Utility; variant = "high" },
     [pscustomobject]@{ id = $Balanced; variant = "high" }
   )
   $Preset.designer.model = @(
     [pscustomobject]@{ id = $Balanced; variant = "medium" },
     [pscustomobject]@{ id = $Primary; variant = "medium" }
+  )
+  $Preset.observer.model = @(
+    [pscustomobject]@{ id = $Utility; variant = "medium" },
+    [pscustomobject]@{ id = $Balanced; variant = "medium" }
   )
 
   $SlimConfig.agents."code-reviewer".model = $Balanced
@@ -236,7 +240,7 @@ function Apply-ModelChoices {
 
   $CouncilPreset = $SlimConfig.council.presets."generic-review-board"
   $CouncilPreset."deep-review".model = $Deep
-  $CouncilPreset."deep-review".variant = "high"
+  $CouncilPreset."deep-review".variant = "max"
   $CouncilPreset."fast-sanity".model = $Utility
   $CouncilPreset."fast-sanity".variant = "low"
   $CouncilPreset."security-sanity".model = $Balanced
