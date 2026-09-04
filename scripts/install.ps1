@@ -11,7 +11,7 @@ $ModelSlots = @(
   [ordered]@{
     Key = "primary"
     Title = "Primary Sol"
-    Description = "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle fallback."
+    Description = "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle reasoning."
     Default = "openai/gpt-5.6-sol"
   },
   [ordered]@{
@@ -196,38 +196,22 @@ function Apply-ModelChoices {
 
   $SlimConfig = Get-Content -LiteralPath $SlimConfigPath -Raw | ConvertFrom-Json
   $Preset = $SlimConfig.presets."generic-openai"
-  $Preset.orchestrator.model = @(
-    [pscustomobject]@{ id = $Balanced; variant = "high" },
-    [pscustomobject]@{ id = $Primary; variant = "high" }
-  )
-  $Preset.oracle.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "max" },
-    [pscustomobject]@{ id = $Balanced; variant = "max" }
-  )
-  $Preset.council.model = @(
-    [pscustomobject]@{ id = $Primary; variant = "high" },
-    [pscustomobject]@{ id = $Balanced; variant = "high" }
-  )
-  $Preset.explorer.model = @(
-    [pscustomobject]@{ id = $Utility; variant = "low" },
-    [pscustomobject]@{ id = $Balanced; variant = "low" }
-  )
-  $Preset.librarian.model = @(
-    [pscustomobject]@{ id = $Utility; variant = "low" },
-    [pscustomobject]@{ id = $Balanced; variant = "low" }
-  )
-  $Preset.fixer.model = @(
-    [pscustomobject]@{ id = $Utility; variant = "high" },
-    [pscustomobject]@{ id = $Balanced; variant = "high" }
-  )
-  $Preset.designer.model = @(
-    [pscustomobject]@{ id = $Balanced; variant = "medium" },
-    [pscustomobject]@{ id = $Primary; variant = "medium" }
-  )
-  $Preset.observer.model = @(
-    [pscustomobject]@{ id = $Utility; variant = "medium" },
-    [pscustomobject]@{ id = $Balanced; variant = "medium" }
-  )
+  $Preset.orchestrator.model = $Balanced
+  $Preset.orchestrator.variant = "high"
+  $Preset.oracle.model = $Primary
+  $Preset.oracle.variant = "max"
+  $Preset.council.model = $Primary
+  $Preset.council.variant = "high"
+  $Preset.explorer.model = $Utility
+  $Preset.explorer.variant = "low"
+  $Preset.librarian.model = $Utility
+  $Preset.librarian.variant = "low"
+  $Preset.fixer.model = $Utility
+  $Preset.fixer.variant = "high"
+  $Preset.designer.model = $Balanced
+  $Preset.designer.variant = "medium"
+  $Preset.observer.model = $Utility
+  $Preset.observer.variant = "medium"
 
   $SlimConfig.agents."code-reviewer".model = $Balanced
   $SlimConfig.agents."code-reviewer".variant = "high"

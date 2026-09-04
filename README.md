@@ -21,10 +21,10 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 - **Luna** (`openai/gpt-5.6-luna`) handles high-volume specialist work: exploration and research at low effort, visual analysis at medium, bounded implementation at high, and titles at none.
 - Core routing uses Terra as the default model and Luna as the small model. Build is Sol medium; native Plan is Sol high; general is Terra medium; Explore is Luna low; title is Luna none; and summary/compaction are Terra medium. Compaction retains 6 tail turns.
 - The orchestrator retains OMOS 2.2.17's bundled scheduler-first prompt, with a goal-locking append: it builds the shortest useful dependency graph, delegates bounded non-trivial work, reconciles results, and owns final verification. It works directly only on one isolated, clear, low-risk action where delegation would cost more than execution.
-- Fallback chains are: orchestrator Terra high → Sol high; Oracle Sol max → Terra max; council Sol high → Terra high; Explorer and Librarian Luna low → Terra low; Fixer Luna high → Terra high; Designer Terra medium → Sol medium; Observer Luna medium → Terra medium.
+- Runtime model fallback is disabled so each agent stays on its configured model for the full session: Orchestrator Terra high; Oracle Sol max; council Sol high; Explorer and Librarian Luna low; Fixer Luna high; Designer Terra medium; Observer Luna medium.
 - Council runs three dynamic councillor subagents in parallel. Deep review uses Sol max, fast sanity uses Luna low, and security sanity uses Terra high. Slim retries an empty councillor response once per model entry and handles council timing through its orchestrator prompt rather than obsolete timeout fields.
 - Generic specialists route code review to Terra high, architecture to Sol high, test strategy to Terra medium, and security review to Sol high.
-- These are template defaults. Customized installations substitute four model slots while retaining the documented effort variants and fallback order.
+- These are template defaults. Customized installations substitute four model slots while retaining the documented role-specific effort variants.
 - The orchestrator is the only implementation lane allowed to delegate. Native Plan may call only the read-only Explorer and Librarian. Fixer and Designer can edit but cannot spawn agents; Explorer, Librarian, Oracle, Observer, and the project review specialists are enforced read-only. `subagent_depth` is explicitly `1`.
 - Librarian alone receives OpenCode's built-in web search plus the bundled Context7 and GitHub grep MCPs for external research. Other normal lanes are denied built-in web search and do not receive those MCPs.
 - Observer is enabled with automatic image routing so screenshots, images, PDFs, and diagrams can be analyzed outside the orchestrator's main context.
@@ -155,14 +155,14 @@ Both installers finish prompting and generate the customized configuration in a 
 
 ## Interactive Model Routing
 
-The installer prompts for four model slots while preserving all role-specific effort variants and fallback order:
+The installer prompts for four model slots while preserving all role-specific effort variants:
 
 - `primary`: Sol for build, Plan, Oracle, architecture, security, and council synthesis.
 - `balanced`: Terra for orchestration, general work, synthesis, summaries, compaction, design, and normal review.
 - `utility`: Luna for exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks.
 - `deep`: Sol at max effort for the bounded deep-review council member only. It is a separate slot so customized installs can select another max-capable model.
 
-Customization accepts only model IDs of the form `openai/<model>` with no internal whitespace. A custom choice replaces a model slot but retains the template's fixed effort variants and fallback positions, so every selected OpenAI model must support the variants used by that slot.
+Customization accepts only model IDs of the form `openai/<model>` with no internal whitespace. A custom choice replaces a model slot but retains the template's fixed effort variants, so every selected OpenAI model must support the variants used by that slot.
 
 Skip prompts and keep defaults for automation:
 

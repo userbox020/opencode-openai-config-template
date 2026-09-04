@@ -26,7 +26,7 @@ Routing supports the primary goal; it must not create additional work.
 
 ## Model Policy
 
-- Use the configured balanced route at high effort for orchestration and its fallback primary route only after a retryable failure.
+- Use the configured balanced route at high effort for orchestration. Runtime model fallback is disabled; surface provider failures instead of switching models.
 - Use the configured primary route at medium effort for direct build work and at high effort for planning, architecture, security, and council synthesis.
 - Use the primary route at max effort only for rare Oracle or deep-council reasoning.
 - Use the utility route at low effort for exploration and research, at medium effort for visual analysis, and at high effort for bounded implementation.

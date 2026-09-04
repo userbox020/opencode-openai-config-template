@@ -5,8 +5,7 @@
   "disabled_agents": [],
   "image_routing": "auto",
   "fallback": {
-    "enabled": true,
-    "maxRetries": 3
+    "enabled": false
   },
   "backgroundJobs": {
     "maxSessionsPerAgent": 3,
@@ -19,76 +18,36 @@
   "presets": {
     "generic-openai": {
       "orchestrator": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "high"
-          },
-          {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "high"
-          }
-        ],
+        "model": "openai/gpt-5.6-terra",
+        "variant": "high",
         "skills": [
           "project-workflow"
         ],
         "mcps": []
       },
       "oracle": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "max"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "max"
-          }
-        ],
+        "model": "openai/gpt-5.6-sol",
+        "variant": "max",
         "skills": [],
         "mcps": []
       },
       "council": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "high"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "high"
-          }
-        ],
+        "model": "openai/gpt-5.6-sol",
+        "variant": "high",
         "skills": [],
         "mcps": []
       },
       "explorer": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-luna",
-            "variant": "low"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "low"
-          }
-        ],
+        "model": "openai/gpt-5.6-luna",
+        "variant": "low",
         "skills": [
           "project-workflow"
         ],
         "mcps": []
       },
       "librarian": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-luna",
-            "variant": "low"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "low"
-          }
-        ],
+        "model": "openai/gpt-5.6-luna",
+        "variant": "low",
         "skills": [],
         "mcps": [
           "context7",
@@ -96,46 +55,22 @@
         ]
       },
       "fixer": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-luna",
-            "variant": "high"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "high"
-          }
-        ],
+        "model": "openai/gpt-5.6-luna",
+        "variant": "high",
         "skills": [
           "project-workflow"
         ],
         "mcps": []
       },
       "designer": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "medium"
-          },
-          {
-            "id": "openai/gpt-5.6-sol",
-            "variant": "medium"
-          }
-        ],
+        "model": "openai/gpt-5.6-terra",
+        "variant": "medium",
         "skills": [],
         "mcps": []
       },
       "observer": {
-        "model": [
-          {
-            "id": "openai/gpt-5.6-luna",
-            "variant": "medium"
-          },
-          {
-            "id": "openai/gpt-5.6-terra",
-            "variant": "medium"
-          }
-        ],
+        "model": "openai/gpt-5.6-luna",
+        "variant": "medium",
         "skills": [],
         "mcps": []
       }

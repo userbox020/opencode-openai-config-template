@@ -29,10 +29,6 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
-function assertModelEntry(entry, id, variant) {
-  assert.deepEqual(entry, { id, variant });
-}
-
 function assertTemplate(configDir, models) {
   const opencode = readJson(join(configDir, 'opencode.jsonc'));
   const slim = readJson(join(configDir, 'oh-my-opencode-slim.jsonc'));
@@ -120,20 +116,33 @@ function assertTemplate(configDir, models) {
   assert.equal(slim.preset, 'generic-openai');
   assert.deepEqual(slim.disabled_agents, []);
   assert.equal(slim.image_routing, 'auto');
-  assert.deepEqual(slim.fallback, { enabled: true, maxRetries: 3 });
+  assert.deepEqual(slim.fallback, { enabled: false });
   assert.equal(slim.backgroundJobs.orchestratorWake.enabled, false);
   assert.equal('timeout' in slim.council, false);
   assert.equal('councillor_retries' in slim.council, false);
   assert.deepEqual(preset.librarian.mcps, ['context7', 'gh_grep']);
-  assertModelEntry(preset.orchestrator.model[0], models.balanced, 'high');
-  assertModelEntry(preset.orchestrator.model[1], models.primary, 'high');
-  assertModelEntry(preset.oracle.model[0], models.primary, 'max');
-  assertModelEntry(preset.oracle.model[1], models.balanced, 'max');
-  assertModelEntry(preset.explorer.model[0], models.utility, 'low');
-  assertModelEntry(preset.librarian.model[0], models.utility, 'low');
-  assertModelEntry(preset.fixer.model[0], models.utility, 'high');
-  assertModelEntry(preset.designer.model[0], models.balanced, 'medium');
-  assertModelEntry(preset.observer.model[0], models.utility, 'medium');
+  assert.deepEqual(
+    {
+      orchestrator: [preset.orchestrator.model, preset.orchestrator.variant],
+      oracle: [preset.oracle.model, preset.oracle.variant],
+      council: [preset.council.model, preset.council.variant],
+      explorer: [preset.explorer.model, preset.explorer.variant],
+      librarian: [preset.librarian.model, preset.librarian.variant],
+      fixer: [preset.fixer.model, preset.fixer.variant],
+      designer: [preset.designer.model, preset.designer.variant],
+      observer: [preset.observer.model, preset.observer.variant],
+    },
+    {
+      orchestrator: [models.balanced, 'high'],
+      oracle: [models.primary, 'max'],
+      council: [models.primary, 'high'],
+      explorer: [models.utility, 'low'],
+      librarian: [models.utility, 'low'],
+      fixer: [models.utility, 'high'],
+      designer: [models.balanced, 'medium'],
+      observer: [models.utility, 'medium'],
+    },
+  );
   assert.equal(slim.agents['code-reviewer'].model, models.balanced);
   assert.equal(slim.agents['repo-architect'].model, models.primary);
   assert.equal(council['deep-review'].model, models.deep);

@@ -65,7 +65,7 @@ MODEL_TITLES=(
   "Deep Review"
 )
 MODEL_DESCRIPTIONS=(
-  "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle fallback."
+  "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle reasoning."
   "High-effort orchestration plus general work, source synthesis, summaries, compaction, design, and normal review."
   "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks."
   "Max-effort bounded deep-review council work only."
@@ -223,38 +223,22 @@ writeJson(opencodePath, opencode);
 
 const slim = readJson(slimPath);
 const preset = slim.presets['generic-openai'];
-preset.orchestrator.model = [
-  { id: balanced, variant: 'high' },
-  { id: primary, variant: 'high' },
-];
-preset.oracle.model = [
-  { id: primary, variant: 'max' },
-  { id: balanced, variant: 'max' },
-];
-preset.council.model = [
-  { id: primary, variant: 'high' },
-  { id: balanced, variant: 'high' },
-];
-preset.explorer.model = [
-  { id: utility, variant: 'low' },
-  { id: balanced, variant: 'low' },
-];
-preset.librarian.model = [
-  { id: utility, variant: 'low' },
-  { id: balanced, variant: 'low' },
-];
-preset.fixer.model = [
-  { id: utility, variant: 'high' },
-  { id: balanced, variant: 'high' },
-];
-preset.designer.model = [
-  { id: balanced, variant: 'medium' },
-  { id: primary, variant: 'medium' },
-];
-preset.observer.model = [
-  { id: utility, variant: 'medium' },
-  { id: balanced, variant: 'medium' },
-];
+preset.orchestrator.model = balanced;
+preset.orchestrator.variant = 'high';
+preset.oracle.model = primary;
+preset.oracle.variant = 'max';
+preset.council.model = primary;
+preset.council.variant = 'high';
+preset.explorer.model = utility;
+preset.explorer.variant = 'low';
+preset.librarian.model = utility;
+preset.librarian.variant = 'low';
+preset.fixer.model = utility;
+preset.fixer.variant = 'high';
+preset.designer.model = balanced;
+preset.designer.variant = 'medium';
+preset.observer.model = utility;
+preset.observer.variant = 'medium';
 slim.agents['code-reviewer'].model = balanced;
 slim.agents['code-reviewer'].variant = 'high';
 slim.agents['repo-architect'].model = primary;
@@ -312,38 +296,14 @@ write_json(opencode_path, opencode)
 
 slim = read_json(slim_path)
 preset = slim["presets"]["generic-openai"]
-preset["orchestrator"]["model"] = [
-    {"id": balanced, "variant": "high"},
-    {"id": primary, "variant": "high"},
-]
-preset["oracle"]["model"] = [
-    {"id": primary, "variant": "max"},
-    {"id": balanced, "variant": "max"},
-]
-preset["council"]["model"] = [
-    {"id": primary, "variant": "high"},
-    {"id": balanced, "variant": "high"},
-]
-preset["explorer"]["model"] = [
-    {"id": utility, "variant": "low"},
-    {"id": balanced, "variant": "low"},
-]
-preset["librarian"]["model"] = [
-    {"id": utility, "variant": "low"},
-    {"id": balanced, "variant": "low"},
-]
-preset["fixer"]["model"] = [
-    {"id": utility, "variant": "high"},
-    {"id": balanced, "variant": "high"},
-]
-preset["designer"]["model"] = [
-    {"id": balanced, "variant": "medium"},
-    {"id": primary, "variant": "medium"},
-]
-preset["observer"]["model"] = [
-    {"id": utility, "variant": "medium"},
-    {"id": balanced, "variant": "medium"},
-]
+preset["orchestrator"].update(model=balanced, variant="high")
+preset["oracle"].update(model=primary, variant="max")
+preset["council"].update(model=primary, variant="high")
+preset["explorer"].update(model=utility, variant="low")
+preset["librarian"].update(model=utility, variant="low")
+preset["fixer"].update(model=utility, variant="high")
+preset["designer"].update(model=balanced, variant="medium")
+preset["observer"].update(model=utility, variant="medium")
 slim["agents"]["code-reviewer"].update(model=balanced, variant="high")
 slim["agents"]["repo-architect"].update(model=primary, variant="high")
 slim["agents"]["test-writer"].update(model=balanced, variant="medium")
