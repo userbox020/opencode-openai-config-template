@@ -144,11 +144,11 @@ function assertTemplate(configDir, models) {
     },
     {
       orchestrator: [models.balanced, 'high'],
-      oracle: [models.primary, 'max'],
+      oracle: [models.oracle, 'max'],
       council: [models.primary, 'high'],
       explorer: [models.utility, 'low'],
       librarian: [models.utility, 'low'],
-      fixer: [models.utility, 'high'],
+      fixer: [models.balanced, 'high'],
       designer: [models.balanced, 'medium'],
       observer: [models.utility, 'medium'],
     },
@@ -182,6 +182,10 @@ function assertTemplate(configDir, models) {
   assert.equal(projectInstructions.includes('Build, Fixer, and Designer execute their assigned bounded work directly'), true);
   assert.equal(projectInstructions.includes('independent deep slot'), true);
   assert.equal(orchestratorAppend.includes('independent deep slot'), true);
+  assert.equal(orchestratorAppend.includes('independent oracle slot'), true);
+  for (const tool of ['edit', 'write', 'apply_patch', 'ast_grep_replace', 'bash']) {
+    assert.equal(opencode.agent.oracle.permission[tool], 'deny', `Oracle must remain read-only: ${tool}`);
+  }
   const workflow = readFileSync(join(configDir, 'skills', 'project-workflow', 'SKILL.md'), 'utf8');
   assert.equal(workflow.includes('Orchestrator only:'), true);
   assert.equal(workflow.includes('Build, Fixer, and Designer execute their assigned bounded work directly'), true);
@@ -195,6 +199,7 @@ function runInstaller(target, sourceFixture, options = {}) {
         options.custom.balanced,
         options.custom.utility,
         options.custom.deep,
+        options.custom.oracle,
         '',
       ].join('\n')
     : undefined);
@@ -262,12 +267,14 @@ const defaultModels = {
   balanced: 'openai/gpt-5.6-terra',
   utility: 'openai/gpt-5.6-luna',
   deep: 'openai/gpt-5.6-sol',
+  oracle: 'openai/gpt-6-astra',
 };
 const customModels = {
   primary: 'openai/test-primary',
   balanced: 'openai/test-balanced',
   utility: 'openai/test-utility',
   deep: 'openai/test-deep',
+  oracle: 'openai/test-oracle',
 };
 
 assertTemplate(templateDir, defaultModels);
@@ -337,7 +344,7 @@ try {
   assert.equal(existsSync(queryMarker), false, 'Declining customization must not query models');
   runInstaller(quietTarget, sourceFixture, {
     opencodeBin, queryMarker, force: true,
-    input: 'y\n1\n\n\n1\n',
+    input: 'y\n1\n\n\n1\n1\n',
   });
   assert.equal(existsSync(queryMarker), true, 'Custom install must query models');
   assertTemplate(join(quietTarget, '.opencode'), {
@@ -366,6 +373,12 @@ try {
   mkdirSync(astraTarget);
   runInstaller(astraTarget, sourceFixture, { custom: astraModels });
   assertTemplate(join(astraTarget, '.opencode'), astraModels);
+
+  const oracleTarget = join(tempRoot, 'independent oracle project');
+  const oracleModels = {...defaultModels, oracle: 'openai/gpt-5.6-sol'};
+  mkdirSync(oracleTarget);
+  runInstaller(oracleTarget, sourceFixture, {custom: oracleModels});
+  assertTemplate(join(oracleTarget, '.opencode'), oracleModels);
 
   const preservedFile = join(target, '.opencode', 'preserved-by-force.txt');
   writeFileSync(preservedFile, 'preserve me\n');

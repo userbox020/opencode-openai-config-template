@@ -11,19 +11,19 @@ $ModelSlots = @(
   [ordered]@{
     Key = "primary"
     Title = "Primary Sol"
-    Description = "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle reasoning."
+    Description = "Direct build work plus high-effort planning, architecture, security, and council synthesis."
     Default = "openai/gpt-5.6-sol"
   },
   [ordered]@{
     Key = "balanced"
     Title = "Balanced Terra"
-    Description = "High-effort orchestration plus general work, source synthesis, summaries, compaction, design, and normal review."
+    Description = "High-effort orchestration plus implementation, general work, source synthesis, summaries, compaction, design, and normal review."
     Default = "openai/gpt-5.6-terra"
   },
   [ordered]@{
     Key = "utility"
     Title = "Utility Luna"
-    Description = "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks. Requires none, low, medium, and high efforts; Astra does not support none."
+    Description = "Exploration, research, visual analysis, titles, and fast sanity checks. Requires none, low, and medium efforts; Astra does not support none."
     Default = "openai/gpt-5.6-luna"
   },
   [ordered]@{
@@ -31,6 +31,12 @@ $ModelSlots = @(
     Title = "Deep Review"
     Description = "Max-effort bounded deep-review council work only."
     Default = "openai/gpt-5.6-sol"
+  },
+  [ordered]@{
+    Key = "oracle"
+    Title = "Oracle Astra"
+    Description = "Rare read-only max-effort reasoning and escalation."
+    Default = "openai/gpt-6-astra"
   }
 )
 
@@ -169,6 +175,7 @@ function Apply-ModelChoices {
   $Balanced = $Models["balanced"]
   $Utility = $Models["utility"]
   $Deep = $Models["deep"]
+  $Oracle = $Models["oracle"]
 
   $OpenCodeConfig.model = $Balanced
   $OpenCodeConfig.small_model = $Utility
@@ -198,7 +205,7 @@ function Apply-ModelChoices {
   $Preset = $SlimConfig.presets."generic-openai"
   $Preset.orchestrator.model = $Balanced
   $Preset.orchestrator.variant = "high"
-  $Preset.oracle.model = $Primary
+  $Preset.oracle.model = $Oracle
   $Preset.oracle.variant = "max"
   $Preset.council.model = $Primary
   $Preset.council.variant = "high"
@@ -206,7 +213,7 @@ function Apply-ModelChoices {
   $Preset.explorer.variant = "low"
   $Preset.librarian.model = $Utility
   $Preset.librarian.variant = "low"
-  $Preset.fixer.model = $Utility
+  $Preset.fixer.model = $Balanced
   $Preset.fixer.variant = "high"
   $Preset.designer.model = $Balanced
   $Preset.designer.variant = "medium"
@@ -301,7 +308,7 @@ foreach ($Slot in $ModelSlots) {
 }
 
 if ($SelectedModels["utility"] -in @("openai/gpt-6-astra", "openai/gpt-6-astra-fast")) {
-  throw "Astra cannot fill the utility slot: title generation requires the unsupported none effort. Choose Luna for utility; use Astra for primary, balanced, or deep. No target files were changed."
+  throw "Astra cannot fill the utility slot: title generation requires the unsupported none effort. Choose Luna for utility; use Astra for primary, balanced, deep, or oracle. No target files were changed."
 }
 
 $StagingRoot = $null

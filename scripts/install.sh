@@ -57,24 +57,27 @@ trim_input() {
 
 trap cleanup_staging EXIT
 
-MODEL_KEYS=(primary balanced utility deep)
+MODEL_KEYS=(primary balanced utility deep oracle)
 MODEL_TITLES=(
   "Primary Sol"
   "Balanced Terra"
   "Utility Luna"
   "Deep Review"
+  "Oracle Astra"
 )
 MODEL_DESCRIPTIONS=(
-  "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle reasoning."
-  "High-effort orchestration plus general work, source synthesis, summaries, compaction, design, and normal review."
-  "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks. Requires none, low, medium, and high efforts; Astra does not support none."
+  "Direct build work plus high-effort planning, architecture, security, and council synthesis."
+  "High-effort orchestration plus implementation, general work, source synthesis, summaries, compaction, design, and normal review."
+  "Exploration, research, visual analysis, titles, and fast sanity checks. Requires none, low, and medium efforts; Astra does not support none."
   "Max-effort bounded deep-review council work only."
+  "Rare read-only max-effort reasoning and escalation."
 )
 MODEL_DEFAULTS=(
   "openai/gpt-5.6-sol"
   "openai/gpt-5.6-terra"
   "openai/gpt-5.6-luna"
   "openai/gpt-5.6-sol"
+  "openai/gpt-6-astra"
 )
 TEMPLATE_ENTRIES=(
   "opencode.jsonc"
@@ -169,7 +172,7 @@ apply_model_choices() {
   local slim_config="$STAGED_CONFIG_DIR/oh-my-opencode-slim.jsonc"
 
   if [[ "$JSON_RUNTIME" == "node" ]]; then
-    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" "$UTILITY_MODEL" "$DEEP_MODEL" <<'NODE'
+    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" "$UTILITY_MODEL" "$DEEP_MODEL" "$ORACLE_MODEL" <<'NODE'
 const fs = require('fs');
 const [
   opencodePath,
@@ -178,6 +181,7 @@ const [
   balanced,
   utility,
   deep,
+  oracle,
 ] = process.argv.slice(2);
 
 function readJson(path) {
@@ -217,7 +221,7 @@ const slim = readJson(slimPath);
 const preset = slim.presets['generic-openai'];
 preset.orchestrator.model = balanced;
 preset.orchestrator.variant = 'high';
-preset.oracle.model = primary;
+preset.oracle.model = oracle;
 preset.oracle.variant = 'max';
 preset.council.model = primary;
 preset.council.variant = 'high';
@@ -225,7 +229,7 @@ preset.explorer.model = utility;
 preset.explorer.variant = 'low';
 preset.librarian.model = utility;
 preset.librarian.variant = 'low';
-preset.fixer.model = utility;
+preset.fixer.model = balanced;
 preset.fixer.variant = 'high';
 preset.designer.model = balanced;
 preset.designer.variant = 'medium';
@@ -252,7 +256,7 @@ NODE
   fi
 
   if [[ "$JSON_RUNTIME" == "python3" ]]; then
-    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" "$UTILITY_MODEL" "$DEEP_MODEL" <<'PY'
+    "$JSON_RUNTIME_BIN" - "$opencode_config" "$slim_config" "$PRIMARY_MODEL" "$BALANCED_MODEL" "$UTILITY_MODEL" "$DEEP_MODEL" "$ORACLE_MODEL" <<'PY'
 import json
 import sys
 
@@ -263,6 +267,7 @@ import sys
     balanced,
     utility,
     deep,
+    oracle,
 ) = sys.argv[1:]
 
 def read_json(path):
@@ -289,11 +294,11 @@ write_json(opencode_path, opencode)
 slim = read_json(slim_path)
 preset = slim["presets"]["generic-openai"]
 preset["orchestrator"].update(model=balanced, variant="high")
-preset["oracle"].update(model=primary, variant="max")
+preset["oracle"].update(model=oracle, variant="max")
 preset["council"].update(model=primary, variant="high")
 preset["explorer"].update(model=utility, variant="low")
 preset["librarian"].update(model=utility, variant="low")
-preset["fixer"].update(model=utility, variant="high")
+preset["fixer"].update(model=balanced, variant="high")
 preset["designer"].update(model=balanced, variant="medium")
 preset["observer"].update(model=utility, variant="medium")
 slim["agents"]["code-reviewer"].update(model=balanced, variant="high")
@@ -378,6 +383,7 @@ PRIMARY_MODEL=""
 BALANCED_MODEL=""
 UTILITY_MODEL=""
 DEEP_MODEL=""
+ORACLE_MODEL=""
 
 SELECTED_MODELS=()
 for index in "${!MODEL_KEYS[@]}"; do
@@ -389,9 +395,10 @@ PRIMARY_MODEL="${SELECTED_MODELS[0]}"
 BALANCED_MODEL="${SELECTED_MODELS[1]}"
 UTILITY_MODEL="${SELECTED_MODELS[2]}"
 DEEP_MODEL="${SELECTED_MODELS[3]}"
+ORACLE_MODEL="${SELECTED_MODELS[4]}"
 
 if [[ "$UTILITY_MODEL" == "openai/gpt-6-astra" || "$UTILITY_MODEL" == "openai/gpt-6-astra-fast" ]]; then
-  echo "Astra cannot fill the utility slot: title generation requires the unsupported none effort. Choose Luna for utility; use Astra for primary, balanced, or deep. No target files were changed." >&2
+  echo "Astra cannot fill the utility slot: title generation requires the unsupported none effort. Choose Luna for utility; use Astra for primary, balanced, deep, or oracle. No target files were changed." >&2
   exit 1
 fi
 

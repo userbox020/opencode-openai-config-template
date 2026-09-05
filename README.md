@@ -14,17 +14,18 @@ Reusable OpenCode configuration for general software projects. It is OpenAI-spec
 
 No API keys, RPC endpoints, private keys, or project-specific paths are included.
 
-## Scheduler-First GPT-5.6 Defaults
+## Scheduler-First Defaults
 
-- **Terra** (`openai/gpt-5.6-terra`) handles high-effort orchestration and balanced general work, source synthesis, technical summaries, compaction, design, and normal review.
-- **Sol** (`openai/gpt-5.6-sol`) handles direct build work at medium effort; planning, council synthesis, security review, and architecture at high effort; and rare Oracle or deep-council reasoning at max effort.
-- **Luna** (`openai/gpt-5.6-luna`) handles high-volume specialist work: exploration and research at low effort, visual analysis at medium, bounded implementation at high, and titles at none.
+- **Astra** (`openai/gpt-6-astra`) supplies Oracle at max effort as the highest-capability reasoning and escalation lane. Oracle remains read-only and is reserved for difficult diagnosis, unresolved design questions, and high-risk decisions, not routine implementation.
+- **Terra** (`openai/gpt-5.6-terra`) handles high-effort orchestration, bounded Fixer implementation, and code review, plus general work, source synthesis, technical summaries, compaction, design, and test strategy at medium effort.
+- **Sol** (`openai/gpt-5.6-sol`) handles direct build work at medium effort; planning, council synthesis, security review, and architecture at high effort; and the independent deep-review council seat at max effort.
+- **Luna** (`openai/gpt-5.6-luna`) handles exploration and research at low effort, visual analysis at medium, titles at none, and fast sanity checks at low.
 - Core routing uses Terra as the default model and Luna as the small model. Build is Sol medium; native Plan is Sol high; general is Terra medium; Explore is Luna low; title is Luna none; and summary/compaction are Terra medium. Compaction retains 6 tail turns.
 - The orchestrator retains OMOS 2.2.17's bundled scheduler-first prompt, with a goal-locking append: it builds the shortest useful dependency graph, delegates bounded non-trivial work, reconciles results, and owns final verification. It works directly only on one isolated, clear, low-risk action where delegation would cost more than execution.
-- Runtime model fallback is disabled; provider errors do not trigger model-chain switches. Configured routes are: Orchestrator Terra high; Oracle Sol max; council Sol high; Explorer and Librarian Luna low; Fixer Luna high; Designer Terra medium; Observer Luna medium. OpenCode's same-model retries and explicit user model selection are separate behaviors.
+- Runtime model fallback is disabled; provider errors do not trigger model-chain switches. Configured routes are: Orchestrator Terra high; Oracle Astra max; council Sol high; Explorer and Librarian Luna low; Fixer Terra high; Designer Terra medium; Observer Luna medium. OpenCode's same-model retries and explicit user model selection are separate behaviors.
 - Council runs three dynamic councillor subagents in parallel. Deep review uses Sol max, fast sanity uses Luna low, and security sanity uses Terra high. Slim retries an empty councillor response once per model entry and handles council timing through its orchestrator prompt rather than obsolete timeout fields.
 - Generic specialists route code review to Terra high, architecture to Sol high, test strategy to Terra medium, and security review to Sol high.
-- These are template defaults. Customized installations substitute four model slots while retaining the documented role-specific effort variants.
+- These are template defaults. Customized installations substitute five independent model slots while retaining the documented role-specific effort variants. The separate Oracle slot does not alter Build, Plan, architecture, security review, or council routing.
 - The orchestrator is the only implementation lane allowed to delegate. Native Plan may call only the read-only Explorer and Librarian. Fixer and Designer can edit but cannot spawn agents; Explorer, Librarian, Oracle, Observer, and the project review specialists are enforced read-only. `subagent_depth` is explicitly `1`.
 - Librarian alone receives OpenCode's built-in web search plus the bundled Context7 and GitHub grep MCPs for external research. Other normal lanes are denied built-in web search and do not receive those MCPs.
 - Observer is enabled with automatic image routing so screenshots, images, PDFs, and diagrams can be analyzed outside the orchestrator's main context.
@@ -38,7 +39,7 @@ Standard USD API pricing per 1M tokens, verified on **2026-09-04** against [offi
 
 | Model | Input | Cache read | Cache write | Output |
 | --- | ---: | ---: | ---: | ---: |
-| Astra (opt-in) | $10.00 | $1.00 | $12.50 | $50.00 |
+| Astra (Oracle) | $10.00 | $1.00 | $12.50 | $50.00 |
 | Sol | $4.00 | $0.40 | $5.00 | $20.00 |
 | Terra | $2.00 | $0.20 | $2.50 | $12.00 |
 | Luna | $0.20 | $0.02 | $0.25 | $1.20 |
@@ -47,7 +48,7 @@ OpenAI's current model pages document all four models with a 1,050,000-token con
 
 | Model | Input | Cache read | Cache write | Output |
 | --- | ---: | ---: | ---: | ---: |
-| Astra (opt-in) | $20.00 | $2.00 | $25.00 | $75.00 |
+| Astra (Oracle) | $20.00 | $2.00 | $25.00 | $75.00 |
 | Sol | $8.00 | $0.80 | $10.00 | $30.00 |
 | Terra | $4.00 | $0.40 | $5.00 | $18.00 |
 | Luna | $0.40 | $0.04 | $0.50 | $1.80 |
@@ -80,7 +81,26 @@ Generated `-fast` aliases select the same underlying model with Fast service (`s
 
 These are OpenAI-reported maximum scores across efforts, not matched-budget measurements. Do not compare the v1.4 index with the older v1.1 table, or Terminal-Bench 4.0 with 2.1. They justify evaluating Astra for difficult work, not moving all agents to it.
 
-Keep Terra for orchestration, Luna for frequent specialist work, and Sol for the shipped primary/deep slots. To evaluate Astra without changing routine routing, customize **only `deep`** to `openai/gpt-6-astra`. That seat remains at `max`, so keep the input focused and compare useful findings, billed tokens, and latency before changing defaults. No paid Astra benchmark was run for this review. Automatic model fallback remains disabled.
+The template assigns Astra to **Oracle only** by default. The Orchestrator can delegate difficult questions to Oracle during normal orchestration; users do not have to switch to Build to involve Astra. Oracle advises read-only, then Fixer implements. Use repo-architect for normal architecture work instead of dispatching Oracle on every task. The independent `oracle` installer slot can select another max-capable model without moving the other Sol agents or the `deep` council seat.
+
+This is a role-based escalation choice, not proof that Astra max always outperforms Sol max. Keep Oracle requests focused and infrequent: at equal token usage, its API token rates are 2.5x Sol's. Subscription credit weights were not measured. Automatic model fallback remains disabled.
+
+A focused 2026-09-04 check using the resolved Oracle prompt and Astra max passed a synthetic inventory-consistency and retry-idempotency review in an isolated session with all tools denied. It took 22.5 seconds of CLI wall time and reported 746 input, 182 visible output, and 307 reasoning tokens through ChatGPT/Codex access. This confirms point-in-time max-effort inference and basic reasoning, not comparative superiority or an end-to-end orchestration benchmark.
+
+### Local Coding Evidence
+
+A 2026-09-04 one-shot comparison used OpenCode 1.18.29 with existing ChatGPT/Codex access, no API key supplied by the harness, tools disabled, and fresh sessions. All four models passed low-effort inference checks. Each model then received the same order-ledger implementation and TTL/LRU cache repair tasks twice at high effort, with 33 predefined checks and no test feedback.
+
+| Model at high effort | Fully passing coding attempts | Mean successful CLI time |
+| --- | ---: | ---: |
+| Astra | 4/4 | 32.5 seconds |
+| Terra | 4/4 | 33.7 seconds |
+| Sol | 4/4 | 59.2 seconds |
+| Luna | 3/4 | 82.5 seconds |
+
+Luna's remaining attempt hit the 120-second provider timeout; its usage is unknown, not zero, and its latency is excluded from that success-only mean. Every completed implementation passed its checks. Whole CLI times include startup and network/provider waiting. This small sample motivates trying Terra for Fixer, but does not evaluate full OMOS orchestration, difficult-code quality, Sol medium Build, or compare Oracle models at max effort. API-equivalent prices and token counts cannot establish actual Codex credit savings.
+
+OpenCode 1.18.29's built-in OpenAI integration clears the requested output-token limit. Do not treat output settings, agent steps, or a local timeout as hard token, credit, or spending caps.
 
 According to [Astra's migration guide](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra), tool calling requires the Responses API; Chat Completions does not support Astra tool calls. Keep effort explicit and do not add `temperature` or `top_p` overrides. Provider safety-monitoring blocks must be surfaced, not automatically retried or routed around.
 
@@ -95,7 +115,7 @@ Sources: [Astra model](https://developers.openai.com/api/docs/models/gpt-6-astra
 
 OMOS 2.2.18 was available at review time, but this update retains the verified 2.2.17 pin. New model IDs do not require changing that pin. Evaluate plugin upgrades separately with background-task and prompt-loading checks rather than bundling them into a pricing update.
 
-The installer queries `opencode models openai` for interactive customization. Catalog presence does not guarantee runtime availability or account access. The 2026-09-04 review checked catalog capabilities and configuration resolution, not paid inference. Earlier GPT-5.6 runtime smoke checks are point-in-time evidence, not a guarantee of current provider health. If your setup uses different model names, select them during install or edit both:
+The installer queries `opencode models openai` for interactive customization. Catalog presence does not guarantee runtime availability or account access. The local inference/coding checks above establish point-in-time access on one ChatGPT/Codex connection, not access for every API organization or a guarantee of current provider health. If your setup uses different model names, select them during install or edit both:
 
 - `template/.opencode/opencode.jsonc`
 - `template/.opencode/oh-my-opencode-slim.jsonc`
@@ -181,23 +201,25 @@ Force installation stops before target changes if a full Orchestrator prompt exi
 
 ## Interactive Model Routing
 
-The installer prompts for four model slots while preserving all role-specific effort variants:
+The installer prompts for five model slots, in the following order, while preserving all role-specific effort variants:
 
-- `primary`: Sol for build, Plan, Oracle, architecture, security, and council synthesis.
-- `balanced`: Terra for orchestration, general work, synthesis, summaries, compaction, design, and normal review.
-- `utility`: Luna for exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks.
+- `primary`: Sol for build, Plan, architecture, security, and council synthesis.
+- `balanced`: Terra for orchestration, Fixer implementation, general work, synthesis, summaries, compaction, design, and normal review.
+- `utility`: Luna for exploration, research, visual analysis, titles, and fast sanity checks.
 - `deep`: Sol at max effort for the bounded deep-review council member only. It is a separate slot so customized installs can select another max-capable model.
+- `oracle`: Astra at max effort for rare read-only reasoning and escalation. It is independent of both `primary` and `deep`; scripted interactive input must account for this fifth prompt.
 
 Customization accepts only model IDs of the form `openai/<model>` with no internal whitespace. A custom choice replaces a model slot but retains the template's fixed effort variants, so every selected OpenAI model must support the variants used by that slot.
 
 | Slot | Required efforts |
 | --- | --- |
-| `primary` | `medium`, `high`, `max` |
+| `primary` | `medium`, `high` |
 | `balanced` | `medium`, `high` |
-| `utility` | `none`, `low`, `medium`, `high` |
+| `utility` | `none`, `low`, `medium` |
 | `deep` | `max` |
+| `oracle` | `max` |
 
-The newly catalogued `openai/gpt-6-astra` and `openai/gpt-6-astra-fast` support `low`, `medium`, `high`, `xhigh`, and `max` in OpenCode 1.18.29, but not `none`. They are compatible with the `primary`, `balanced`, and `deep` slot efforts, not the `utility` slot's title generation at `none`. Both installers reject these two Astra IDs for utility before changing target files, including in force mode. Keep Luna for utility work instead of silently changing the title effort or paying flagship rates for every small task. Other custom IDs still require checking `opencode models openai --verbose` against the table; the installer is not a general provider-capability validator.
+The `openai/gpt-6-astra` and `openai/gpt-6-astra-fast` IDs support `low`, `medium`, `high`, `xhigh`, and `max` in OpenCode 1.18.29, but not `none`. They are compatible with the `primary`, `balanced`, `deep`, and `oracle` slot efforts, not the `utility` slot's title generation at `none`. Both installers reject these two Astra IDs for utility before changing target files, including in force mode. Keep Luna for utility work instead of silently changing the title effort or paying flagship rates for every small task. Other custom IDs still require checking `opencode models openai --verbose` against the table; the installer is not a general provider-capability validator.
 
 Skip prompts and keep defaults for automation:
 
@@ -240,13 +262,14 @@ npx --yes oh-my-opencode-slim@2.2.17 doctor
 
 In PowerShell, use `opencode.cmd` and `npx.cmd` for these commands if execution policy blocks the `.ps1` wrappers. Apply the project-scoped environment variables above before plugin-aware checks. Debug commands can expose merged user configuration; inspect locally and redact sensitive values before sharing output.
 
-Run a paid live model smoke test if desired:
+Run a live model smoke test if desired; it consumes Codex subscription quota or API usage according to the configured connection:
 
 ```bash
 opencode run --agent build -m openai/gpt-5.6-sol "Respond with exactly: ROUTING_OK_SOL"
 opencode run --agent build -m openai/gpt-5.6-terra "Respond with exactly: ROUTING_OK_TERRA"
 opencode run --agent build -m openai/gpt-5.6-luna "Respond with exactly: ROUTING_OK_LUNA"
 opencode run --agent build -m openai/gpt-5.6-sol --variant max "Respond with exactly: ROUTING_OK_SOL_MAX"
+opencode run --agent build -m openai/gpt-6-astra --variant max "Respond with exactly: ROUTING_OK_ASTRA_MAX"
 ```
 
 Launch with the required environment variables and restart any already-running OpenCode session after copying or editing config files. OpenCode loads config at startup.
@@ -254,7 +277,7 @@ Launch with the required environment variables and restart any already-running O
 ## Included Agents
 
 - `orchestrator`: primary project coordinator.
-- `oracle`: focused clarification and second-pass reasoning.
+- `oracle`: highest-capability read-only reasoning and escalation for unresolved high-risk questions; advises rather than implements.
 - `explorer`: read-only repository discovery and code-path mapping.
 - `librarian`: read-only external documentation and source research.
 - `fixer`: bounded implementation without subagent delegation.

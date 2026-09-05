@@ -20,7 +20,7 @@ This workspace is for authorized software engineering on the current project.
 - Use `@librarian` for external documentation and source research. Never include secrets or private code in remote search queries.
 - Keep security work defensive and scoped to repositories, systems, and targets the user is authorized to review.
 - If a request cannot be handled safely, reframe it into defensive validation, remediation, test design, or documentation.
-- Use the configured balanced route at high effort for orchestration and code review, and at medium effort for general work, summaries, compaction, design, and test strategy.
-- Use the configured primary route at medium effort for direct build work, at high effort for planning, architecture, security, and council synthesis, and at max effort only for rare Oracle escalation. The independent deep slot supplies the deep-review council member at max effort.
-- Use the configured utility route at none or low effort for titles, exploration, research, and fast sanity; at medium effort for visual analysis; and at high effort for bounded implementation.
+- Use the configured balanced route at high effort for orchestration, Fixer implementation, and code review, and at medium effort for general work, summaries, compaction, design, and test strategy.
+- Use the configured primary route at medium effort for direct build work and at high effort for planning, architecture, security, and council synthesis. The independent oracle slot supplies rare read-only reasoning escalation at max effort; the independent deep slot supplies the deep-review council member at max effort. Oracle advises; Fixer implements.
+- Use the configured utility route at none or low effort for titles, exploration, research, and fast sanity, and at medium effort for visual analysis.
 - Keep Fast aliases opt-in for latency-sensitive foreground work rather than default background routing.

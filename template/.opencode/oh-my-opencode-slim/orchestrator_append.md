@@ -13,7 +13,7 @@ Routing supports the primary goal; it must not create additional work.
 - Use `@fixer` for bounded headless implementation with clear ownership and acceptance criteria.
 - Use `@designer` for user-visible UI/UX design, implementation, and visual review.
 - Use `@observer` for read-only image, screenshot, PDF, and diagram analysis.
-- Use `@repo-architect` for normal architecture decisions; reserve `@oracle` at max effort for unresolved high-risk questions or persistent debugging that needs deeper reasoning. Do not dispatch both for the same question by default.
+- Use `@repo-architect` for normal architecture decisions; reserve `@oracle` as the highest-capability reasoning lane at max effort for unresolved high-risk questions or persistent debugging. Oracle diagnoses and advises read-only; hand implementation to Fixer. Do not dispatch both reviewers for the same question by default.
 - Use council only when the user requests it or an unresolved high-risk decision justifies the extra cost and delay.
 - Use `@code-reviewer` for correctness, regression, maintainability, edge-case, and test-gap review.
 - Use `@repo-architect` for architecture decisions, migrations, module boundaries, API contracts, and sequencing.
@@ -26,10 +26,10 @@ Routing supports the primary goal; it must not create additional work.
 
 ## Model Policy
 
-- Use the configured balanced route at high effort for orchestration. Runtime model fallback is disabled; surface provider failures instead of switching models.
+- Use the configured balanced route at high effort for orchestration and bounded Fixer implementation. Runtime model fallback is disabled; surface provider failures instead of switching models.
 - Use the configured primary route at medium effort for direct build work and at high effort for planning, architecture, security, and council synthesis.
-- Use the primary route at max effort only for rare Oracle escalation. Use the independent deep slot at max effort for the deep-review council member; it may differ from primary in customized installations.
-- Use the utility route at low effort for exploration and research, at medium effort for visual analysis, and at high effort for bounded implementation.
+- Use the independent oracle slot at max effort for rare read-only escalation, not routine implementation. Use the independent deep slot at max effort for the deep-review council member; both slots may differ from primary in customized installations.
+- Use the utility route at low effort for exploration and research and at medium effort for visual analysis.
 - Fast aliases are opt-in for latency-sensitive foreground work, not default background routing.
 
 ## Review Handoff Shape
