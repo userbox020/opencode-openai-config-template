@@ -33,6 +33,35 @@ No API keys, RPC endpoints, private keys, or project-specific paths are included
 - Secret-like files are read-gated and edit-denied by default.
 - Shell commands ask first by default, including `git push`, package publish, production deploy, `kubectl`, `terraform apply`, live transaction broadcasts, and destructive cleanup. Dedicated file tools remain available for normal repository inspection and edits.
 
+### Agent Model Map
+
+These are the shipped template defaults. Interactive installation can replace the model IDs through the five model slots, but preserves each route's effort variant.
+
+| Agent or route | Model | Effort | Role |
+| --- | --- | --- | --- |
+| `orchestrator` | `openai/gpt-5.6-terra` | `high` | Coordinates work, delegates, reconciles results, and verifies the outcome. |
+| `oracle` | `openai/gpt-6-astra` | `max` | Provides rare read-only reasoning and escalation for difficult or high-risk questions. |
+| `council` | `openai/gpt-5.6-sol` | `high` | Synthesizes the dynamic review council. |
+| `explorer` | `openai/gpt-5.6-luna` | `low` | Maps and searches the local repository read-only. |
+| `librarian` | `openai/gpt-5.6-luna` | `low` | Researches external documentation and source read-only. |
+| `fixer` | `openai/gpt-5.6-terra` | `high` | Implements bounded non-visual changes without delegation. |
+| `designer` | `openai/gpt-5.6-terra` | `medium` | Handles user-visible UI/UX design and implementation. |
+| `observer` | `openai/gpt-5.6-luna` | `medium` | Analyzes images, screenshots, PDFs, and diagrams read-only. |
+| `code-reviewer` | `openai/gpt-5.6-terra` | `high` | Reviews correctness, regressions, maintainability, and test gaps read-only. |
+| `repo-architect` | `openai/gpt-5.6-sol` | `high` | Reviews architecture, migrations, boundaries, and API contracts read-only. |
+| `test-writer` | `openai/gpt-5.6-terra` | `medium` | Designs targeted tests and regression coverage read-only. |
+| `security-reviewer` | `openai/gpt-5.6-sol` | `high` | Performs defensive security review read-only. |
+| Native `build` | `openai/gpt-5.6-sol` | `medium` | Performs direct implementation without delegation. |
+| Native `plan` | `openai/gpt-5.6-sol` | `high` | Plans read-only and may delegate only to Explorer or Librarian. |
+| Native `general` | `openai/gpt-5.6-terra` | `medium` | Handles general-purpose non-specialist work. |
+| Native `explore` | `openai/gpt-5.6-luna` | `low` | Provides OpenCode's built-in exploration route. |
+| Council `deep-review` | `openai/gpt-5.6-sol` | `max` | Performs the deepest independent council review. |
+| Council `fast-sanity` | `openai/gpt-5.6-luna` | `low` | Checks quickly for obvious errors and omissions. |
+| Council `security-sanity` | `openai/gpt-5.6-terra` | `high` | Checks council input for common defensive security risks. |
+| Internal `title` | `openai/gpt-5.6-luna` | `none` | Generates conversation titles. |
+| Internal `summary` | `openai/gpt-5.6-terra` | `medium` | Generates conversation summaries. |
+| Internal `compaction` | `openai/gpt-5.6-terra` | `medium` | Compacts long conversation context. |
+
 ## Models, Effort, Pricing, And Performance
 
 Standard USD API pricing per 1M tokens, verified on **2026-09-04** against [official OpenAI API pricing](https://developers.openai.com/api/docs/pricing). These are direct API prices, not ChatGPT subscription credits or third-party hosting rates. Short-context rates apply through 272,000 input tokens:
