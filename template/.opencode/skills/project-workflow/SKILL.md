@@ -21,7 +21,7 @@ Use this skill to complete the user's stated goal without turning it into a broa
 - Infer project tooling and conventions from nearby code and manifests as needed; do not inventory the entire repository first.
 - Check whether the worktree already has user changes before editing files that may overlap.
 - Avoid reading secret-bearing files unless the user explicitly authorizes that exact action.
-- Route non-trivial work once the dependency path is clear. Do not write a formal plan or task list for one isolated action.
+- Orchestrator routes non-trivial work once the dependency path is clear. Implementation agents start their assigned work directly. Do not write a formal plan or task list for one isolated action.
 
 ## Editing Discipline
 
@@ -45,14 +45,16 @@ Use the cheapest decisive evidence from the repository's existing tooling:
 
 ## Delegation
 
-Direct execution is reserved for one isolated, clear, low-risk action where delegation would cost more than execution. For non-trivial work, keep the orchestrator focused on routing, reconciliation, and final verification:
+Orchestrator only: direct execution is reserved for one isolated, clear, low-risk action where delegation would cost more than execution. For non-trivial work, focus on routing, reconciliation, and final verification. Build, Fixer, and Designer execute their assigned bounded work directly without spawning agents; read-only specialists inspect and report. Native Plan may delegate only read-only research to Explorer or Librarian.
+
+The following routing choices are for Orchestrator, not instructions for specialists to delegate:
 
 - `@explorer` for read-only repository discovery and code-path mapping.
 - `@librarian` for external documentation, current APIs, and source research.
 - `@fixer` for bounded headless implementation with clear ownership.
 - `@designer` for user-visible UI/UX design and implementation.
 - `@observer` for read-only visual and document analysis.
-- `@oracle` for architecture, persistent debugging, and high-risk reasoning.
+- `@oracle` for unresolved high-risk questions or persistent debugging; use `@repo-architect` for normal architecture work instead of duplicating both reviews.
 - `@council` only when diverse model judgment is worth the extra cost.
 - `@code-reviewer` for correctness, regressions, edge cases, and maintainability.
 - `@repo-architect` for design tradeoffs, migrations, module boundaries, and rollout plans.

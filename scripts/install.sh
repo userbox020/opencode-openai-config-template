@@ -67,7 +67,7 @@ MODEL_TITLES=(
 MODEL_DESCRIPTIONS=(
   "Direct build work plus high-effort planning, architecture, security, council synthesis, and Oracle reasoning."
   "High-effort orchestration plus general work, source synthesis, summaries, compaction, design, and normal review."
-  "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks."
+  "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks. Requires none, low, medium, and high efforts; Astra does not support none."
   "Max-effort bounded deep-review council work only."
 )
 MODEL_DEFAULTS=(
@@ -101,14 +101,6 @@ else
 fi
 
 MODELS=()
-if command -v "$OPENCODE_BIN" >/dev/null 2>&1; then
-  while IFS= read -r model; do
-    model="$(trim_input "$model")"
-    if [[ "$model" =~ ^openai/[^[:space:]]+$ ]]; then
-      MODELS+=("$model")
-    fi
-  done < <("$OPENCODE_BIN" models openai </dev/null 2>/dev/null || true)
-fi
 
 select_model() {
   local key="$1"
@@ -338,6 +330,14 @@ for entry in "${TEMPLATE_ENTRIES[@]}"; do
   fi
 done
 
+for override in "oh-my-opencode-slim/orchestrator.md" "oh-my-opencode-slim/generic-openai/orchestrator.md"; do
+  override_path="$DEST_DIR/$override"
+  if [[ -e "$override_path" || -L "$override_path" ]]; then
+    echo "Full orchestrator prompt override found at $override_path. Review and rename or back up the replacement before reinstalling to use the bundled scheduler prompt. No target files were changed." >&2
+    exit 1
+  fi
+done
+
 if [[ -e "$DEST_DIR" && "$FORCE" != "1" ]]; then
   echo "Target already has .opencode. Re-run with FORCE=1 to merge and overwrite matching template files." >&2
   exit 1
@@ -346,12 +346,6 @@ fi
 if [[ "$NON_INTERACTIVE" != "1" ]]; then
   echo ""
   echo "Interactive model routing"
-  echo "Provider queried: openai"
-  if [[ ${#MODELS[@]} -gt 0 ]]; then
-    echo "Found ${#MODELS[@]} model(s) via opencode models openai."
-  else
-    echo "No model list was available from opencode models openai. Defaults still work when the configured OpenAI models are available."
-  fi
   if ! read -r -p "Customize model routing now? [Y/n]: " customize_answer; then
     customize_answer=""
   fi
@@ -361,6 +355,23 @@ if [[ "$NON_INTERACTIVE" != "1" ]]; then
       NON_INTERACTIVE="1"
       ;;
   esac
+fi
+
+if [[ "$NON_INTERACTIVE" != "1" ]]; then
+  if command -v "$OPENCODE_BIN" >/dev/null 2>&1; then
+    while IFS= read -r model; do
+      model="$(trim_input "$model")"
+      if [[ "$model" =~ ^openai/[^[:space:]]+$ ]]; then
+        MODELS+=("$model")
+      fi
+    done < <("$OPENCODE_BIN" models openai </dev/null 2>/dev/null || true)
+  fi
+  echo "Provider queried: openai"
+  if [[ ${#MODELS[@]} -gt 0 ]]; then
+    echo "Found ${#MODELS[@]} model(s) via opencode models openai."
+  else
+    echo "No model list was available from opencode models openai. Defaults still work when the configured OpenAI models are available."
+  fi
 fi
 
 PRIMARY_MODEL=""
@@ -378,6 +389,11 @@ PRIMARY_MODEL="${SELECTED_MODELS[0]}"
 BALANCED_MODEL="${SELECTED_MODELS[1]}"
 UTILITY_MODEL="${SELECTED_MODELS[2]}"
 DEEP_MODEL="${SELECTED_MODELS[3]}"
+
+if [[ "$UTILITY_MODEL" == "openai/gpt-6-astra" || "$UTILITY_MODEL" == "openai/gpt-6-astra-fast" ]]; then
+  echo "Astra cannot fill the utility slot: title generation requires the unsupported none effort. Choose Luna for utility; use Astra for primary, balanced, or deep. No target files were changed." >&2
+  exit 1
+fi
 
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/opencode-openai-config.XXXXXX")"
 STAGED_CONFIG_DIR="$STAGING_DIR/.opencode"

@@ -23,7 +23,7 @@ $ModelSlots = @(
   [ordered]@{
     Key = "utility"
     Title = "Utility Luna"
-    Description = "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks."
+    Description = "Exploration, research, bounded implementation, visual analysis, titles, and fast sanity checks. Requires none, low, medium, and high efforts; Astra does not support none."
     Default = "openai/gpt-5.6-luna"
   },
   [ordered]@{
@@ -255,23 +255,23 @@ foreach ($Entry in $TemplateEntries) {
   }
 }
 
+foreach ($Override in @("oh-my-opencode-slim/orchestrator.md", "oh-my-opencode-slim/generic-openai/orchestrator.md")) {
+  $OverridePath = Join-Path -Path $Destination -ChildPath $Override
+  if (Test-Path -LiteralPath $OverridePath) {
+    throw "Full orchestrator prompt override found at $OverridePath. Review and rename or back up the replacement before reinstalling to use the bundled scheduler prompt. No target files were changed."
+  }
+}
+
 if ((Test-Path -LiteralPath $Destination) -and -not $Force) {
   throw "Target already has .opencode. Re-run with -Force to merge and overwrite matching template files."
 }
 
-$OpenCodeCommand = Get-OpenCodeCommand
-$AvailableModels = Get-AvailableModels -OpenCodeCommand $OpenCodeCommand
+$AvailableModels = @()
 $SkipModelPrompt = $NonInteractive
 
 if (-not $NonInteractive) {
   ""
   "Interactive model routing"
-  "Provider queried: openai"
-  if ($AvailableModels.Count -gt 0) {
-    "Found $($AvailableModels.Count) model(s) via opencode models openai."
-  } else {
-    "No model list was available from opencode models openai. Defaults still work when the configured OpenAI models are available."
-  }
 
   $CustomizeAnswer = Read-Host "Customize model routing now? [Y/n]"
   if ($null -eq $CustomizeAnswer) {
@@ -284,9 +284,24 @@ if (-not $NonInteractive) {
   }
 }
 
+if (-not $SkipModelPrompt) {
+  $OpenCodeCommand = Get-OpenCodeCommand
+  $AvailableModels = @(Get-AvailableModels -OpenCodeCommand $OpenCodeCommand)
+  "Provider queried: openai"
+  if ($AvailableModels.Count -gt 0) {
+    "Found $($AvailableModels.Count) model(s) via opencode models openai."
+  } else {
+    "No model list was available from opencode models openai. Defaults still work when the configured OpenAI models are available."
+  }
+}
+
 $SelectedModels = @{}
 foreach ($Slot in $ModelSlots) {
   $SelectedModels[$Slot["Key"]] = Select-Model -Slot $Slot -AvailableModels $AvailableModels -SkipPrompt:$SkipModelPrompt
+}
+
+if ($SelectedModels["utility"] -in @("openai/gpt-6-astra", "openai/gpt-6-astra-fast")) {
+  throw "Astra cannot fill the utility slot: title generation requires the unsupported none effort. Choose Luna for utility; use Astra for primary, balanced, or deep. No target files were changed."
 }
 
 $StagingRoot = $null
